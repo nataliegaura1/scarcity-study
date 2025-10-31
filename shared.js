@@ -1,6 +1,6 @@
 // ✅ Final version — same visuals, GET logging for Google Sheet (Safari-safe)
 const CONFIG = {
-  ENDPOINT: "PASTE_YOUR_/exec_URL_HERE", // 👈 replace with your real /exec link
+  ENDPOINT: "https://script.google.com/macros/s/AKfycbw3yw3Tn3clqbg7z6Rt74KE3o7PZr-tXbRcTm9CVo7PfJrkZzQ3xhepSLa-CuX7ANR-mw/exec", // 👈 replace with your real /exec link
   PRODUCT_NAME: "Air Jordan 4 Retro 'White Cement' (2025)",
   PRICE_EUR: 119,
   IMAGES: [
