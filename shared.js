@@ -1,6 +1,6 @@
 // Final no-survey version with cart, carousel, and robust logging (Safari-safe)
 const CONFIG = {
-  ENDPOINT: "https://script.google.com/macros/s/AKfycbxhg0AZOzP5jjz5Ft43Qby0UqdsssT6wwJMIpZGr4XVlVOpQzlZxUoL_g2ScrmGeYM/exec",
+  ENDPOINT: "https://script.google.com/macros/s/AKfycbzbnwsSrp-knXrcnjrG9b7A92qYfKD3W0qG5NWcn712VvpuofUR4ZZyV7Kqmki3SNQzlA/exec",
   PRODUCT_NAME: "Air Jordan 4 Retro 'White Cement' (2025)",
   PRICE_EUR: 119,
   IMAGES: [
