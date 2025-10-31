@@ -1,4 +1,4 @@
-// Final no-survey version with cart, carousel, and robust logging (Safari-safe)
+// Final no-survey version with cart, carousel, and robust logging (Safari/CORS-safe)
 const CONFIG = {
   ENDPOINT: "https://script.google.com/macros/s/AKfycbzbnwsSrp-knXrcnjrG9b7A92qYfKD3W0qG5NWcn712VvpuofUR4ZZyV7Kqmki3SNQzlA/exec",
   PRODUCT_NAME: "Air Jordan 4 Retro 'White Cement' (2025)",
@@ -18,7 +18,7 @@ function uuidv4(){
 }
 function now(){ return performance.now(); }
 
-/* ---------- Reliable event logger (beacon with fetch fallback) ---------- */
+/* ---------- Reliable event logger (beacon → fetch(no headers) → image GET) ---------- */
 function logEvent(kind, payload = {}) {
   const base = {
     pid: window.__PID,
@@ -27,24 +27,32 @@ function logEvent(kind, payload = {}) {
     userAgent: navigator.userAgent,
     page: location.pathname.replace(/^.*\//,'')
   };
-  const data = JSON.stringify({ kind, ...base, ...payload });
-  const blob = new Blob([data], { type: "application/json" });
+  const dataObj = { kind, ...base, ...payload };
+  const dataStr = JSON.stringify(dataObj);
 
-  // Try sendBeacon first
+  // 1) Try sendBeacon first (no preflight)
   if (navigator.sendBeacon) {
+    const blob = new Blob([dataStr], { type: "application/json" });
     const ok = navigator.sendBeacon(CONFIG.ENDPOINT, blob);
     if (ok) return;
   }
-  // Fallback for Safari/unload
+
+  // 2) Fallback: POST with no custom headers to avoid preflight
   try {
     fetch(CONFIG.ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: data,
+      body: dataStr,          // no Content-Type header → no CORS preflight
       keepalive: true,
       mode: "no-cors"
-    });
-  } catch(_) { /* fire-and-forget */ }
+    }).then(()=>{}).catch(()=>{});
+  } catch (_) {}
+
+  // 3) Final fallback: GET via image ping (never preflights)
+  try {
+    const url = CONFIG.ENDPOINT + "?d=" + encodeURIComponent(dataStr);
+    const img = new Image();
+    img.src = url;
+  } catch (_) {}
 }
 
 let t0, firstInteraction, atcTime, maxScroll=0;
