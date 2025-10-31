@@ -1,6 +1,6 @@
-// Final no-survey version with cart & timer start on page load (timer page only)
+// Final no-survey version with cart, carousel, and robust logging (Safari-safe)
 const CONFIG = {
-  ENDPOINT: "https://script.google.com/macros/s/AKfycby_V_57n1zfxKtfoo3a7W-86-InX4b8HBZO8dNW2I-O1h8uNYEoG2O0cXitBpYR7NaM/exec",
+  ENDPOINT: "https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLirb4e4mYKeiYCzGoKWZKZ4QllQAxqvFGeIuXBT4b8bkgQXdJbohDgWFvWcuIWuHCou6ZMnGaGhYqspL4o00xM-l_xykZ9E33T6G3YGl65EAjBJ6jopCXj7sE29G3bV-N4W7MXj-9qI_VudnncvSuOxIP7fheoxCJ95mt-fU_9JkMKkJeZOb6Zh7GsnlNmohW6HdnPsNxliHJUk5-A_RQMyULmCEHyWugO78B8gK9ZM_Me__huCkmz6ut1ojmTKUnsMvLtJ3WAD8FuWPilem_a4zh4pEg&lib=M-ABdhZ1INm-tQGpTy_-CzFfREsBTZvRn",
   PRODUCT_NAME: "Air Jordan 4 Retro 'White Cement' (2025)",
   PRICE_EUR: 119,
   IMAGES: [
@@ -18,7 +18,8 @@ function uuidv4(){
 }
 function now(){ return performance.now(); }
 
-function logEvent(kind, payload={}){
+/* ---------- Reliable event logger (beacon with fetch fallback) ---------- */
+function logEvent(kind, payload = {}) {
   const base = {
     pid: window.__PID,
     condition: window.__COND,
@@ -26,60 +27,118 @@ function logEvent(kind, payload={}){
     userAgent: navigator.userAgent,
     page: location.pathname.replace(/^.*\//,'')
   };
-  const body = JSON.stringify({ kind, ...base, ...payload });
-  try {
-    navigator.sendBeacon(CONFIG.ENDPOINT, new Blob([body], {type:"application/json"}));
-  } catch(e){
-    if (CONFIG.ENDPOINT && CONFIG.ENDPOINT.startsWith("http")) {
-      fetch(CONFIG.ENDPOINT, { method:"POST", headers:{'Content-Type':'application/json'}, body });
-    }
+  const data = JSON.stringify({ kind, ...base, ...payload });
+  const blob = new Blob([data], { type: "application/json" });
+
+  // Try sendBeacon first
+  if (navigator.sendBeacon) {
+    const ok = navigator.sendBeacon(CONFIG.ENDPOINT, blob);
+    if (ok) return;
   }
+  // Fallback for Safari/unload
+  try {
+    fetch(CONFIG.ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: data,
+      keepalive: true,
+      mode: "no-cors"
+    });
+  } catch(_) { /* fire-and-forget */ }
 }
 
-let t0, firstInteraction, atcTime, maxScroll=0, infoOpens=0, infoOpenTime=0, infoPanelOpenAt=null, purchased=false;
+let t0, firstInteraction, atcTime, maxScroll=0;
+let infoOpens=0, infoOpenTime=0, infoPanelOpenAt=null, purchased=false;
+let firstClickKind = null;
 
+/* ---------- Classify first click path ---------- */
+function classifyFirstClick(e){
+  const t = e.target;
+  if (t.closest("#atcBtn"))    return "cta";
+  if (t.closest("#cartBtn"))   return "cart";
+  if (t.closest("#sizePanel")) return "size_guide";
+  if (t.closest("#retPanel"))  return "returns";
+  if (t.closest("details"))    return "details_other";
+  return "other";
+}
+
+/* ---------- Exit flush used by multiple events ---------- */
+function flushExitEvent(){
+  if (infoPanelOpenAt){
+    infoOpenTime += (now() - infoPanelOpenAt);
+    infoPanelOpenAt = null;
+  }
+  const total = now() - t0;
+  const abandoned = !purchased;
+
+  logEvent("page_exit", {
+    totalMs: Math.round(total),
+    maxScroll: Number(maxScroll.toFixed(3)),
+    infoOpens,
+    infoOpenTimeMs: Math.round(infoOpenTime),
+    abandoned,
+    firstClickKind
+  });
+}
+
+/* ---------- Metrics wiring ---------- */
 function setupMetrics(){
   t0 = now();
   logEvent("page_load", {});
 
+  // First interaction + first click path
   document.addEventListener("click", (e)=>{
-    if(!firstInteraction){ firstInteraction = now(); logEvent("first_interaction", {}); }
-    const tgt = e.target.closest("[data-info]");
-    if(tgt){
-      const which = tgt.getAttribute("data-info");
-      infoOpens += 1; logEvent("info_open", {which, infoOpens});
-      if(!infoPanelOpenAt) infoPanelOpenAt = now();
+    if (!firstInteraction) {
+      firstInteraction = now();
+      firstClickKind = classifyFirstClick(e);
+      logEvent("first_interaction", { firstClickKind });
     }
-  }, {capture:true});
+  }, { capture:true });
 
+  // Scroll depth
   window.addEventListener("scroll", ()=>{
     const st = window.scrollY;
     const docH = document.documentElement.scrollHeight - window.innerHeight;
-    const d = docH>0 ? st/docH : 0;
-    if(d>maxScroll) maxScroll = d;
-  }, {passive:true});
+    const d = docH > 0 ? st / docH : 0;
+    if (d > maxScroll) maxScroll = d;
+  }, { passive:true });
 
-  window.addEventListener("beforeunload", ()=>{
-    const total = now()-t0;
-    if(infoPanelOpenAt){ infoOpenTime += (now()-infoPanelOpenAt); infoPanelOpenAt=null; }
-    const abandoned = !purchased;
-    logEvent("page_exit", {
-      totalMs: Math.round(total),
-      maxScroll: Number(maxScroll.toFixed(3)),
-      infoOpens,
-      infoOpenTimeMs: Math.round(infoOpenTime),
-      abandoned
+  // Info depth timing (details panels)
+  const sizePanel = document.getElementById("sizePanel");
+  const retPanel  = document.getElementById("retPanel");
+
+  function hookPanel(name, el){
+    if (!el) return;
+    el.addEventListener("toggle", ()=>{
+      if (el.open){
+        infoOpens += 1;
+        if (!infoPanelOpenAt) infoPanelOpenAt = now();
+        logEvent("info_open", { which: name, infoOpens });
+      } else {
+        if (infoPanelOpenAt){
+          infoOpenTime += (now() - infoPanelOpenAt);
+          infoPanelOpenAt = null;
+        }
+      }
     });
+  }
+  hookPanel("size_guide", sizePanel);
+  hookPanel("returns",    retPanel);
+
+  // Exit (cover all browsers)
+  window.addEventListener("beforeunload", flushExitEvent);
+  window.addEventListener("pagehide", flushExitEvent);
+  document.addEventListener("visibilitychange", ()=>{
+    if (document.visibilityState === "hidden") flushExitEvent();
   });
 }
 
-/* ===== Carousel renderer ===== */
+/* ---------- Carousel ---------- */
 function renderCarousel(){
   const track = document.getElementById("carouselTrack");
   const dotsWrap = document.getElementById("dots");
   if (!track) return;
 
-  // slides
   track.innerHTML = "";
   CONFIG.IMAGES.forEach((src, i)=>{
     const slide = document.createElement("div");
@@ -90,7 +149,6 @@ function renderCarousel(){
     track.appendChild(slide);
   });
 
-  // dots
   dotsWrap.innerHTML = "";
   CONFIG.IMAGES.forEach((_, i)=>{
     const dot = document.createElement("button");
@@ -119,7 +177,6 @@ function renderCarousel(){
   next?.addEventListener("click", ()=> go(1));
   track.addEventListener("scroll", ()=> window.requestAnimationFrame(updateDots));
 
-  // Keyboard support
   track.setAttribute("tabindex", "0");
   track.addEventListener("keydown", (e)=>{
     if(e.key === "ArrowLeft") go(-1);
@@ -129,7 +186,7 @@ function renderCarousel(){
   updateDots();
 }
 
-/* ===== Cart & UI helpers ===== */
+/* ---------- Cart & UI helpers ---------- */
 function openDrawer(){ document.getElementById("drawer").classList.add("open"); }
 function closeDrawer(){ document.getElementById("drawer").classList.remove("open"); }
 function updateCartUI(){
@@ -140,12 +197,11 @@ function updateCartUI(){
   else { empty.style.display="block"; item.style.display="none"; count.textContent="0"; }
 }
 
-/* ===== Page wiring ===== */
+/* ---------- Page wiring ---------- */
 function wireCommon(condition, startTimerImmediately=false){
   window.__COND = condition;
   window.__PID = (new URLSearchParams(location.search)).get("pid") || uuidv4();
 
-  // Set product name & price
   const titleEl = document.getElementById("title");
   const priceEl = document.getElementById("price");
   if (titleEl) titleEl.textContent = CONFIG.PRODUCT_NAME;
@@ -165,22 +221,10 @@ function wireCommon(condition, startTimerImmediately=false){
         logEvent("purchase", { ttaMs: tta, price: CONFIG.PRICE_EUR });
         atc.disabled = true; atc.textContent = "Purchased ✓";
         updateCartUI();
-        openDrawer(); // show purchase immediately
+        openDrawer();
       }
     });
   }
-
-  // Info sections timing
-  const sizePanel = document.getElementById("sizePanel");
-  const retPanel = document.getElementById("retPanel");
-  sizePanel?.addEventListener("toggle", ()=>{
-    if(!sizePanel.open && infoPanelOpenAt){ infoOpenTime += (now()-infoPanelOpenAt); infoPanelOpenAt=null; }
-    if(sizePanel.open && !infoPanelOpenAt){ infoPanelOpenAt = now(); }
-  });
-  retPanel?.addEventListener("toggle", ()=>{
-    if(!retPanel.open && infoPanelOpenAt){ infoOpenTime += (now()-infoPanelOpenAt); infoPanelOpenAt=null; }
-    if(retPanel.open && !infoPanelOpenAt){ infoPanelOpenAt = now(); }
-  });
 
   // Cart icon
   const cartBtn = document.getElementById("cartBtn");
@@ -196,13 +240,12 @@ function wireCommon(condition, startTimerImmediately=false){
     logEvent("consent_ok", {});
   });
 
-  // Start the timer ONLY when asked (i.e., on timer.html)
+  // Start the timer ONLY when asked (timer.html)
   if (startTimerImmediately) startCountdown();
 }
 
-/* ===== Timer next to price only (timer.html) ===== */
+/* ---------- Timer next to price (timer.html) ---------- */
 function startCountdown(){
-  // Prefer the price timer IDs if present; fallback to generic ids
   const pill = document.getElementById("priceTimerPill") || document.getElementById("timerPill");
   const out  = document.getElementById("priceCountdown") || document.getElementById("countdown");
   if (!pill || !out) return;
@@ -214,7 +257,7 @@ function startCountdown(){
     out.textContent = `${m}:${s}`;
   };
 
-  render(); // show initial 01:00 immediately
+  render();
   const iv = setInterval(()=>{
     remain -= 1;
     if (remain <= 0){
@@ -227,3 +270,4 @@ function startCountdown(){
     render();
   }, 1000);
 }
+
