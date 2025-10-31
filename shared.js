@@ -1,6 +1,6 @@
 // Final no-survey version with cart & timer start on page load (timer page only)
 const CONFIG = {
-  ENDPOINT: "https://example.com/apps-script",
+  ENDPOINT: "https://script.google.com/macros/s/AKfycby_V_57n1zfxKtfoo3a7W-86-InX4b8HBZO8dNW2I-O1h8uNYEoG2O0cXitBpYR7NaM/exec",
   PRODUCT_NAME: "Air Jordan 4 Retro 'White Cement' (2025)",
   PRICE_EUR: 119,
   IMAGES: [
