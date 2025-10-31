@@ -133,7 +133,7 @@ function wireCommon(condition, startTimerImmediately=false){
   window.__PID = (new URLSearchParams(location.search)).get("pid") || uuidv4();
   document.getElementById("title").textContent = CONFIG.PRODUCT_NAME;
   document.getElementById("price").textContent = "€" + CONFIG.PRICE_EUR;
-  renderImages();
+  renderCarousel();
   setupMetrics();
 
   const atc = document.getElementById("atcBtn");
