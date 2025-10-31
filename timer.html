@@ -9,14 +9,11 @@
 </head>
 <body>
 <div class="wrap">
-  <!-- HEADER -->
   <div class="header">
     <div class="brand"><span class="dot"></span> <span>MarketLab</span></div>
     <div class="search"><input placeholder="Search sneakers, brands, models" /></div>
     <div class="header-right">
-      <button id="cartBtn" class="cart-btn" title="Cart">
-        🛒 <span id="cartCount" class="count">0</span>
-      </button>
+      <button id="cartBtn" class="cart-btn" title="Cart">🛒 <span id="cartCount" class="count">0</span></button>
     </div>
   </div>
 
@@ -32,13 +29,11 @@
     </div>
   </div>
 
-  <!-- MAIN LAYOUT -->
   <div class="layout">
-    <!-- LEFT: Categories (non-interactive) -->
     <aside class="card sidebar">
       <h3>Browse Categories</h3>
       <ul class="disabled">
-        <li>Men's & Women's Sneakers <span>(AJ4)</span></li>
+        <li>Men's and Women's Sneakers <span>(AJ4)</span></li>
         <li>Nike <span>• Jordan Brand</span></li>
         <li>Basketball <span>• Lifestyle</span></li>
         <li>Retro Classics <span>• 1989–2025</span></li>
@@ -48,26 +43,22 @@
       </ul>
     </aside>
 
-    <!-- MIDDLE: IMAGE CAROUSEL -->
     <div class="carousel">
-      <div id="carouselTrack" class="carousel-track" aria-live="polite"></div>
+      <div id="carouselTrack" class="carousel-track"></div>
       <div class="carousel-controls">
-        <button id="prevBtn" class="ghost" aria-label="Previous">←</button>
-        <div id="dots" class="carousel-dots" aria-hidden="true"></div>
-        <button id="nextBtn" class="ghost" aria-label="Next">→</button>
+        <button id="prevBtn" class="ghost">←</button>
+        <div id="dots" class="carousel-dots"></div>
+        <button id="nextBtn" class="ghost">→</button>
       </div>
     </div>
 
-    <!-- RIGHT: OFFER -->
     <div class="card">
       <div class="title" id="title">Air Jordan 4 Retro 'White Cement' (2025)</div>
       <div class="priceTag">
         <div class="price" id="price">€119</div>
-        <!-- Timer replaces the stock badge here -->
-        <span id="timerPill" class="badge timer">Offer ends in <b id="countdown">01:00</b></span>
+        <span class="badge timer">Offer ends in <b id="countdown">01:00</b></span>
       </div>
 
-      <!-- BIG CTA above info sections -->
       <div class="actions">
         <button id="atcBtn" class="primary" style="font-size:20px">Add to cart</button>
         <div class="subtitle">Primary action is above. You can review the information below.</div>
@@ -75,54 +66,38 @@
 
       <div class="details">
         <details id="sizePanel"><summary class="subtitle">Size guide</summary>
-          <p class="subtitle">Fit: Generally true to size. Wide feet: consider +0.5. EU 36–47 available. Insole length examples: EU 41 ≈ 26.0 cm, EU 42 ≈ 26.5 cm, EU 43 ≈ 27.1 cm. Break-in period: 2–3 wears as leather relaxes. For orthotics: remove stock insole to increase volume; depth accommodates most low-volume inserts.</p>
-          <p class="subtitle">Width/Lockdown: Mesh panels improve breathability; TPU wings allow alternative lacing for higher insteps. Runner’s loop recommended to prevent heel slip. For narrow feet, skip one lower eyelet to reduce forefoot pressure.</p>
-          <p class="subtitle">Care for fit: Replace insoles every 6–9 months for cushioning renewal. For rainy climates, use a leather protector spray; avoid saturation to preserve adhesives.</p>
+          <p class="subtitle">Fit: True to size. Wide feet: consider +0.5.</p>
         </details>
         <details id="retPanel"><summary class="subtitle">Returns</summary>
-          <p class="subtitle">Returns: Free 30-day returns from delivery. Items must be unworn, with tags attached and original box included. Use the prepaid label. Refunds are processed to the original payment method within 5–7 business days after inspection.</p>
-          <p class="subtitle">Exchanges: One free size exchange per order while stock lasts. Defects/Warranty: Manufacturing defects reported within 60 days are covered; minor paint speckle variation is normal for this model. For assistance, contact support with your order ID.</p>
-          <p class="subtitle">Packaging note: Double-boxed shipping helps protect the shoe box. Please try on indoors on a clean surface to keep soles pristine if you may exchange/return.</p>
-        </details>
-        <details><summary class="subtitle">Product description</summary>
-          <p class="subtitle">The Air Jordan 4 blends heritage performance with modern comfort. This “White Cement” reissue keeps the iconic speckled wings and midsole while updating internal foams for softer step-in. Mesh side panels increase airflow; visible Air units cushion heel impact; a herringbone outsole grips across city surfaces. Stitching and panel lines mirror the original last for a faithful profile.</p>
-          <p class="subtitle">Materials & build: Full-grain leather upper; TPU support wings; polyurethane midsole with encapsulated forefoot Air and visible heel Air; rubber outsole with pivot point and flex grooves. Care: wipe clean; avoid harsh detergents; store with shoe trees to limit creasing.</p>
+          <p class="subtitle">Free 30-day returns, 1 free size exchange, refund in 5–7 days.</p>
         </details>
       </div>
 
-      <footer>
-        <span>Study variant: Timer</span>
-      </footer>
+      <footer><span>Study variant: Timer</span></footer>
     </div>
   </div>
 </div>
 
-<!-- CART DRAWER -->
 <aside id="drawer" class="drawer" aria-hidden="true">
-  <header>
-    <strong>Your Cart</strong>
-    <button id="closeDrawer" class="ghost">✕</button>
-  </header>
+  <header><strong>Your Cart</strong><button id="closeDrawer" class="ghost">✕</button></header>
   <div class="body">
     <div id="cartEmpty" class="cart-empty">Your cart is empty.</div>
     <div id="cartItem" class="cart-item" style="display:none">
       <img src="images/whitecement-1.avif" alt="Jordan 4" />
-      <div>
-        <div><strong>Air Jordan 4 Retro 'White Cement'</strong></div>
-        <div class="subtitle">Purchased • Price: €119</div>
-      </div>
+      <div><strong>Air Jordan 4 Retro 'White Cement'</strong><div class="subtitle">Purchased • Price: €119</div></div>
     </div>
   </div>
 </aside>
 
 <!-- SCRIPTS -->
 <script>window.__COND="Timer";</script>
-<script src="shared.js?v=10"></script>
+<script src="shared.js?v=11"></script>
 <script>
 document.addEventListener("DOMContentLoaded",()=>wireCommon("Timer",true));
 </script>
 </body>
 </html>
+
 
 
 
