@@ -3,15 +3,13 @@ const CONFIG = {
   // If your Google Apps Script logging endpoint is ready, you can replace this:
   ENDPOINT: "https://script.google.com/macros/s/AKfycbw3yw3Tn3clqbg7z6Rt74KE3o7PZr-tXbRcTm9CVo7PfJrkZzQ3xhepSLa-CuX7ANR-mw/exec",
   
-  PRODUCT_NAME: "Air Jordan 4 Retro 'White Cement' (2025)",
+ PRODUCT_NAME: "Air Jordan 4 Retro 'White Cement' (2025)",
   PRICE_EUR: 119,
-
-  // ✅ Make sure your images folder is next to your HTML files
   IMAGES: [
-    "images/whitecement-1.avif",
-    "images/whitecement-2.avif",
-    "images/whitecement-3.avif",
-    "images/whitecement-4.avif"
+    "whitecement-1.avif",
+    "whitecement-2.avif",
+    "whitecement-3.avif",
+    "whitecement-4.avif"
   ]
 };
 
