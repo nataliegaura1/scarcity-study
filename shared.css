@@ -60,3 +60,38 @@ footer{margin-top:16px;color:var(--muted);font-size:13px;display:flex;justify-co
 .cart-item img{width:64px;height:64px;border-radius:10px;object-fit:cover}
 .cart-empty{color:var(--muted)}
 @media (max-width:1100px){.layout{grid-template-columns:1fr;}.sidebar{display:none;}}
+/* Carousel */
+.carousel { display: grid; gap: 10px; }
+.carousel-track{
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #0f1419;
+  -webkit-overflow-scrolling: touch;
+}
+.carousel-track::-webkit-scrollbar{ height: 8px; }
+.carousel-track::-webkit-scrollbar-thumb{ background: #1d232b; border-radius: 8px; }
+.slide{
+  scroll-snap-align: start;
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-top: 100%; /* 1:1 square */
+}
+.slide img{
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover; border-radius: 12px;
+}
+.carousel-controls{
+  display: grid; grid-template-columns: 48px 1fr 48px; align-items: center; gap: 8px;
+}
+.carousel-dots{ display:flex; justify-content:center; gap:8px; }
+.carousel-dots button{
+  width:8px; height:8px; border-radius:999px; border:0; background:#2a3038; cursor:pointer;
+}
+.carousel-dots button.active{ background: var(--accent); }
