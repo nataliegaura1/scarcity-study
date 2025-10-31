@@ -1,4 +1,4 @@
-// --- Shared config (WORKING visual version) ---
+// Final no-survey version with cart & gallery (working visual version)
 const CONFIG = {
   ENDPOINT: "https://script.google.com/macros/s/AKfycbw3yw3Tn3clqbg7z6Rt74KE3o7PZr-tXbRcTm9CVo7PfJrkZzQ3xhepSLa-CuX7ANR-mw/exec",
   PRODUCT_NAME: "Air Jordan 4 Retro 'White Cement' (2025)",
@@ -11,71 +11,46 @@ const CONFIG = {
   ]
 };
 
-// --- Carousel Renderer (old working version) ---
-function renderCarousel() {
-  const track = document.getElementById("carouselTrack");
-  const dotsWrap = document.getElementById("dots");
-  if (!track) return;
+let purchased = false;
 
-  // Clear track
-  track.innerHTML = "";
-  CONFIG.IMAGES.forEach((src, i) => {
-    const slide = document.createElement("div");
-    slide.className = "slide";
+function renderGallery(){
+  const wrap = document.getElementById("gallery");
+  if(!wrap) return;
+  wrap.innerHTML = "";
+  CONFIG.IMAGES.forEach(src=>{
     const img = document.createElement("img");
     img.src = src;
-    img.alt = `Product image ${i + 1}`;
-    slide.appendChild(img);
-    track.appendChild(slide);
+    img.alt = "Jordan 4";
+    wrap.appendChild(img);
   });
+}
 
-  // Dots
-  dotsWrap.innerHTML = "";
-  CONFIG.IMAGES.forEach((_, i) => {
-    const dot = document.createElement("button");
-    dot.setAttribute("aria-label", `Go to image ${i + 1}`);
-    dot.addEventListener("click", () => {
-      track.scrollTo({ left: track.clientWidth * i, behavior: "smooth" });
-    });
-    dotsWrap.appendChild(dot);
+function openDrawer(){ document.getElementById("drawer").classList.add("open"); }
+function closeDrawer(){ document.getElementById("drawer").classList.remove("open"); }
+
+function updateCartUI(){
+  const empty = document.getElementById("cartEmpty");
+  const item = document.getElementById("cartItem");
+  const count = document.getElementById("cartCount");
+  if(purchased){ empty.style.display="none"; item.style.display="grid"; count.textContent="1"; }
+  else { empty.style.display="block"; item.style.display="none"; count.textContent="0"; }
+}
+
+function wireCommon(condition, startTimerImmediately=false){
+  renderGallery();
+  const atc = document.getElementById("atcBtn");
+  atc.addEventListener("click", ()=>{
+    purchased = true;
+    atc.disabled = true;
+    atc.textContent = "Purchased ✓";
+    updateCartUI();
+    openDrawer();
   });
-
-  const prev = document.getElementById("prevBtn");
-  const next = document.getElementById("nextBtn");
-
-  function indexFromScroll() {
-    return Math.round(track.scrollLeft / track.clientWidth);
-  }
-
-  function updateDots() {
-    const idx = indexFromScroll();
-    [...dotsWrap.children].forEach((d, i) =>
-      d.classList.toggle("active", i === idx)
-    );
-  }
-
-  function go(delta) {
-    const idx = indexFromScroll() + delta;
-    const clamped = Math.max(0, Math.min(CONFIG.IMAGES.length - 1, idx));
-    track.scrollTo({
-      left: track.clientWidth * clamped,
-      behavior: "smooth",
-    });
-  }
-
-  prev?.addEventListener("click", () => go(-1));
-  next?.addEventListener("click", () => go(1));
-  track.addEventListener("scroll", () =>
-    window.requestAnimationFrame(updateDots)
-  );
-
-  // Keyboard arrows
-  track.setAttribute("tabindex", "0");
-  track.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowLeft") go(-1);
-    if (e.key === "ArrowRight") go(1);
+  document.getElementById("cartBtn").addEventListener("click", openDrawer);
+  document.getElementById("closeDrawer").addEventListener("click", closeDrawer);
+  document.getElementById("agreeBtn").addEventListener("click", ()=>{
+    document.getElementById("cons").classList.add("hidden");
   });
-
-  updateDots();
+  updateCartUI();
 }
 
