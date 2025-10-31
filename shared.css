@@ -95,3 +95,21 @@ footer{margin-top:16px;color:var(--muted);font-size:13px;display:flex;justify-co
   width:8px; height:8px; border-radius:999px; border:0; background:#2a3038; cursor:pointer;
 }
 .carousel-dots button.active{ background: var(--accent); }
+/* Make product images bigger */
+#gallery img[data-slide] {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+}
+
+#slidesWrap {
+  width: 100%;
+  max-width: 1200px; /* adjust for desired size */
+  margin: 0 auto;
+}
+
+@media (min-width: 1400px) {
+  #slidesWrap {
+    max-width: 1400px;
+  }
+}
