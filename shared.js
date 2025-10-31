@@ -1,14 +1,9 @@
 // Final no-survey version with cart, carousel, and robust logging (Safari/CORS-safe)
 const CONFIG = {
-  ENDPOINT: "https://script.google.com/macros/s/AKfycbzbnwsSrp-knXrcnjrG9b7A92qYfKD3W0qG5NWcn712VvpuofUR4ZZyV7Kqmki3SNQzlA/exec",
+  ENDPOINT: "https://script.google.com/macros/s/AKfycbz0ZbdEE8-0yMVJXnPWu1tq0_4ep4gVYzr_V8ok2pBtu3_AuRtudzithspd5MInsA9hBw/exec",
   PRODUCT_NAME: "Air Jordan 4 Retro 'White Cement' (2025)",
   PRICE_EUR: 119,
-  IMAGES: [
-    "images/whitecement-1.avif",
-    "images/whitecement-2.avif",
-    "images/whitecement-3.avif",
-    "images/whitecement-4.avif"
-  ]
+  IMAGES: [ "images/whitecement-1.avif","images/whitecement-2.avif","images/whitecement-3.avif","images/whitecement-4.avif" ]
 };
 
 function uuidv4(){
