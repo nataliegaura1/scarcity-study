@@ -1,6 +1,6 @@
 // ✅ Final no-CORS logger version
 const CONFIG = {
-  ENDPOINT: "PASTE_YOUR_/exec_URL_HERE",  // 👈 replace this with your real URL
+  ENDPOINT: "https://script.google.com/macros/s/AKfycbw3yw3Tn3clqbg7z6Rt74KE3o7PZr-tXbRcTm9CVo7PfJrkZzQ3xhepSLa-CuX7ANR-mw/exec",  // 👈 replace this with your real URL
   PRODUCT_NAME: "Air Jordan 4 Retro 'White Cement' (2025)",
   PRICE_EUR: 119,
   IMAGES: [
