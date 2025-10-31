@@ -1,4 +1,4 @@
-// Final version: carousel + 1-minute timer (Timer page) + longer copy + Google Sheet logging
+// Final version: robust carousel (no CSS dependency) + 1-minute timer + longer copy + Google Sheet logging
 const CONFIG = {
   ENDPOINT: "https://script.google.com/macros/s/AKfycbw3yw3Tn3clqbg7z6Rt74KE3o7PZr-tXbRcTm9CVo7PfJrkZzQ3xhepSLa-CuX7ANR-mw/exec",
   PRODUCT_NAME: "Air Jordan 4 Retro 'White Cement' (2025)",
@@ -26,14 +26,12 @@ let remainingMs = 0;
 
 // --- helpers ---
 function $(id) { return document.getElementById(id); }
-
 function formatMMSS(ms) {
   const sec = Math.max(0, Math.ceil(ms / 1000));
   const m = Math.floor(sec / 60).toString().padStart(2, "0");
   const s = (sec % 60).toString().padStart(2, "0");
   return `${m}:${s}`;
 }
-
 async function logEvent(event, extra = {}) {
   try {
     const body = {
@@ -48,35 +46,34 @@ async function logEvent(event, extra = {}) {
       userAgent: navigator.userAgent,
       ...extra
     };
-
     await fetch(CONFIG.ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-      // If your Apps Script is not CORS-enabled, you can switch to: mode: "no-cors"
+      // If Apps Script lacks CORS, switch to: mode: "no-cors"
     });
-  } catch (e) {
-    // Swallow errors to avoid affecting UX
-    // console.warn("Log failed", e);
-  }
+  } catch (e) { /* ignore logging errors */ }
 }
 
-// --- carousel ---
+// --- carousel (render all images; toggle visibility in JS) ---
 function updateCarousel() {
-  const imgEl = $("carouselImg");
+  const slidesWrap = $("slidesWrap");
   const dotsWrap = $("carouselDots");
-  if (!imgEl || !dotsWrap) return;
+  if (!slidesWrap || !dotsWrap) return;
+
+  const slides = Array.from(slidesWrap.querySelectorAll("img[data-slide]"));
+  if (!slides.length) return;
 
   // clamp index
-  if (carouselIndex < 0) carouselIndex = CONFIG.IMAGES.length - 1;
-  if (carouselIndex >= CONFIG.IMAGES.length) carouselIndex = 0;
+  if (carouselIndex < 0) carouselIndex = slides.length - 1;
+  if (carouselIndex >= slides.length) carouselIndex = 0;
 
-  imgEl.src = CONFIG.IMAGES[carouselIndex];
+  slides.forEach((img, idx) => {
+    img.style.display = (idx === carouselIndex) ? "block" : "none";
+  });
 
-  // update dots
-  [...dotsWrap.children].forEach((btn, i) => {
-    if (i === carouselIndex) btn.classList.add("active");
-    else btn.classList.remove("active");
+  Array.from(dotsWrap.children).forEach((btn, i) => {
+    btn.style.opacity = (i === carouselIndex) ? "1" : "0.5";
   });
 }
 
@@ -84,58 +81,70 @@ function renderGallery() {
   const wrap = $("gallery");
   if (!wrap) return;
 
+  // Build markup
   wrap.innerHTML = `
-    <div class="carousel" role="region" aria-label="Product images">
-      <button class="nav prev" id="carouselPrev" aria-label="Previous image">‹</button>
-      <img id="carouselImg" class="slide" alt="Jordan 4 product image" />
-      <button class="nav next" id="carouselNext" aria-label="Next image">›</button>
-      <div class="dots" id="carouselDots" role="tablist" aria-label="Image selector"></div>
+    <div id="carousel" style="position:relative;display:flex;align-items:center;justify-content:center;">
+      <button id="carouselPrev"
+              aria-label="Previous image"
+              style="position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:28px;padding:.25rem .5rem;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;">‹</button>
+      <div id="slidesWrap" style="width:100%;max-width:900px;">
+      </div>
+      <button id="carouselNext"
+              aria-label="Next image"
+              style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:28px;padding:.25rem .5rem;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;">›</button>
+      <div id="carouselDots" aria-label="Image selector"
+           style="position:absolute;bottom:8px;display:flex;gap:6px;"></div>
     </div>
   `;
 
+  const slidesWrap = $("slidesWrap");
   const dotsWrap = $("carouselDots");
-  CONFIG.IMAGES.forEach((_, i) => {
-    const b = document.createElement("button");
-    b.type = "button";
-    b.className = "dot";
-    b.setAttribute("role", "tab");
-    b.setAttribute("aria-label", `Show image ${i + 1}`);
-    b.addEventListener("click", () => {
-      carouselIndex = i;
-      updateCarousel();
-    });
-    dotsWrap.appendChild(b);
+
+  // Create <img> slides (visible first one, others hidden)
+  CONFIG.IMAGES.forEach((src, i) => {
+    const img = document.createElement("img");
+    img.setAttribute("data-slide", i.toString());
+    img.alt = "Jordan 4 product image";
+    img.src = src;
+    img.style.width = "100%";
+    img.style.height = "auto";
+    img.style.borderRadius = "8px";
+    img.style.display = (i === 0) ? "block" : "none";
+    slidesWrap.appendChild(img);
+
+    const dot = document.createElement("button");
+    dot.type = "button";
+    dot.setAttribute("aria-label", `Show image ${i + 1}`);
+    dot.style.width = "10px";
+    dot.style.height = "10px";
+    dot.style.borderRadius = "50%";
+    dot.style.border = "1px solid #999";
+    dot.style.background = "#fff";
+    dot.style.opacity = (i === 0) ? "1" : "0.5";
+    dot.style.cursor = "pointer";
+    dot.addEventListener("click", () => { carouselIndex = i; updateCarousel(); });
+    dotsWrap.appendChild(dot);
   });
 
-  $("carouselPrev").addEventListener("click", () => {
-    carouselIndex--;
-    updateCarousel();
-  });
-  $("carouselNext").addEventListener("click", () => {
-    carouselIndex++;
-    updateCarousel();
-  });
+  // Controls
+  $("carouselPrev").addEventListener("click", () => { carouselIndex--; updateCarousel(); });
+  $("carouselNext").addEventListener("click", () => { carouselIndex++; updateCarousel(); });
 
-  // keyboard support
+  // Keyboard & swipe (basic)
+  let touchStartX = null;
   wrap.addEventListener("keydown", (e) => {
     if (e.key === "ArrowLeft") { carouselIndex--; updateCarousel(); }
     if (e.key === "ArrowRight") { carouselIndex++; updateCarousel(); }
   });
-
-  // basic swipe support
-  let touchStartX = null;
   wrap.addEventListener("touchstart", (e) => { touchStartX = e.changedTouches[0].clientX; }, { passive: true });
   wrap.addEventListener("touchend", (e) => {
-    if (touchStartX === null) return;
+    if (touchStartX == null) return;
     const dx = e.changedTouches[0].clientX - touchStartX;
-    if (Math.abs(dx) > 40) {
-      carouselIndex += (dx < 0 ? 1 : -1);
-      updateCarousel();
-    }
+    if (Math.abs(dx) > 40) { carouselIndex += (dx < 0 ? 1 : -1); updateCarousel(); }
     touchStartX = null;
   }, { passive: true });
 
-  // initial render
+  // Initial state
   carouselIndex = 0;
   updateCarousel();
 }
@@ -143,7 +152,6 @@ function renderGallery() {
 // --- cart drawer ---
 function openDrawer() { $("drawer").classList.add("open"); }
 function closeDrawer() { $("drawer").classList.remove("open"); }
-
 function updateCartUI() {
   const empty = $("cartEmpty");
   const item = $("cartItem");
@@ -178,12 +186,14 @@ function startTimer(seconds = 60) {
 
     if (remainingMs <= 0) {
       clearInterval(timerInterval);
-      pill.classList.add("expired");
-      pill.innerHTML = "Offer ended";
+      pill.textContent = "Offer ended";
+      pill.style.background = "#eee";
+      pill.style.color = "#666";
       const atc = $("atcBtn");
       if (atc) {
         atc.disabled = true;
-        atc.classList.add("disabled");
+        atc.style.opacity = "0.6";
+        atc.style.cursor = "not-allowed";
       }
       logEvent("timer_expired");
     }
@@ -195,7 +205,7 @@ function wireCommon(condition, startTimerOnConsent = false) {
   // render carousel
   renderGallery();
 
-  // add handlers
+  // Add handlers
   const atc = $("atcBtn");
   if (atc) {
     atc.addEventListener("click", () => {
@@ -210,11 +220,8 @@ function wireCommon(condition, startTimerOnConsent = false) {
       });
     });
   }
-
-  const cartBtn = $("cartBtn");
-  if (cartBtn) cartBtn.addEventListener("click", openDrawer);
-  const closeBtn = $("closeDrawer");
-  if (closeBtn) closeBtn.addEventListener("click", closeDrawer);
+  const cartBtn = $("cartBtn"); if (cartBtn) cartBtn.addEventListener("click", openDrawer);
+  const closeBtn = $("closeDrawer"); if (closeBtn) closeBtn.addEventListener("click", closeDrawer);
 
   const agree = $("agreeBtn");
   if (agree) {
