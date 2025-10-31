@@ -1,6 +1,6 @@
-// ✅ Final version — no-CORS logger + consent fix + full metrics
+// ✅ Final version — same visuals, GET logging for Google Sheet (Safari-safe)
 const CONFIG = {
-  ENDPOINT: "https://script.google.com/macros/s/AKfycbw3yw3Tn3clqbg7z6Rt74KE3o7PZr-tXbRcTm9CVo7PfJrkZzQ3xhepSLa-CuX7ANR-mw/exec",  // 👈 replace with your actual Google Apps Script /exec URL
+  ENDPOINT: "PASTE_YOUR_/exec_URL_HERE", // 👈 replace with your real /exec link
   PRODUCT_NAME: "Air Jordan 4 Retro 'White Cement' (2025)",
   PRICE_EUR: 119,
   IMAGES: [
@@ -17,7 +17,7 @@ function uuidv4(){
 }
 function now(){ return performance.now(); }
 
-/* ---------- Logger (GET image ping only) ---------- */
+/* ---------- Logging (GET ping for all browsers) ---------- */
 function logEvent(kind, payload = {}) {
   const base = {
     pid: window.__PID,
@@ -26,23 +26,24 @@ function logEvent(kind, payload = {}) {
     userAgent: navigator.userAgent,
     page: location.pathname.replace(/^.*\//,'')
   };
-  const dataStr = JSON.stringify({ kind, ...base, ...payload });
+  const data = JSON.stringify({ kind, ...base, ...payload });
   const img = new Image();
-  img.src = CONFIG.ENDPOINT + "?d=" + encodeURIComponent(dataStr);
+  img.src = CONFIG.ENDPOINT + "?d=" + encodeURIComponent(data);
 }
 
-/* ---------- Metrics and tracking ---------- */
+/* ---------- Variables ---------- */
 let t0, firstInteraction, atcTime, maxScroll = 0;
 let infoOpens = 0, infoOpenTime = 0, infoPanelOpenAt = null, purchased = false;
 let firstClickKind = null;
 
+/* ---------- Helpers ---------- */
 function classifyFirstClick(e){
   const t = e.target;
-  if (t.closest("#atcBtn"))    return "cta";
-  if (t.closest("#cartBtn"))   return "cart";
+  if (t.closest("#atcBtn")) return "cta";
+  if (t.closest("#cartBtn")) return "cart";
   if (t.closest("#sizePanel")) return "size_guide";
-  if (t.closest("#retPanel"))  return "returns";
-  if (t.closest("details"))    return "details_other";
+  if (t.closest("#retPanel")) return "returns";
+  if (t.closest("details")) return "details_other";
   return "other";
 }
 
@@ -63,11 +64,11 @@ function flushExitEvent(){
   });
 }
 
+/* ---------- Core metric setup ---------- */
 function setupMetrics(){
   t0 = now();
   logEvent("page_load", {});
 
-  // First interaction
   document.addEventListener("click", (e)=>{
     if (!firstInteraction) {
       firstInteraction = now();
@@ -76,7 +77,6 @@ function setupMetrics(){
     }
   }, { capture: true });
 
-  // Scroll depth
   window.addEventListener("scroll", ()=>{
     const st = window.scrollY;
     const docH = document.documentElement.scrollHeight - window.innerHeight;
@@ -84,7 +84,6 @@ function setupMetrics(){
     if (d > maxScroll) maxScroll = d;
   }, { passive: true });
 
-  // Exit events
   window.addEventListener("beforeunload", flushExitEvent);
   window.addEventListener("pagehide", flushExitEvent);
   document.addEventListener("visibilitychange", ()=>{
@@ -92,28 +91,64 @@ function setupMetrics(){
   });
 }
 
-/* ---------- Page wiring ---------- */
-function wireCommon(condition, startTimer = false){
+/* ---------- UI helpers ---------- */
+function openDrawer(){ document.getElementById("drawer").classList.add("open"); }
+function closeDrawer(){ document.getElementById("drawer").classList.remove("open"); }
+function updateCartUI(){
+  const empty = document.getElementById("cartEmpty");
+  const item = document.getElementById("cartItem");
+  const count = document.getElementById("cartCount");
+  if(purchased){
+    empty.style.display="none";
+    item.style.display="grid";
+    count.textContent="1";
+  } else {
+    empty.style.display="block";
+    item.style.display="none";
+    count.textContent="0";
+  }
+}
+
+/* ---------- Carousel renderer ---------- */
+function renderCarousel(){
+  const gallery = document.getElementById("gallery");
+  if (!gallery) return;
+  gallery.innerHTML = "";
+  CONFIG.IMAGES.forEach(src=>{
+    const img = document.createElement("img");
+    img.src = src;
+    img.alt = "Jordan 4";
+    gallery.appendChild(img);
+  });
+}
+
+/* ---------- Page setup ---------- */
+function wireCommon(condition, startTimer=false){
   window.__COND = condition;
   window.__PID = (new URLSearchParams(location.search)).get("pid") || uuidv4();
+
+  const titleEl = document.getElementById("title");
+  const priceEl = document.getElementById("price");
+  if (titleEl) titleEl.textContent = CONFIG.PRODUCT_NAME;
+  if (priceEl) priceEl.textContent = "€" + CONFIG.PRICE_EUR;
+
+  renderCarousel();
   setupMetrics();
 
-  // Add-to-cart (purchase)
   const atc = document.getElementById("atcBtn");
-  if (atc) {
-    atc.addEventListener("click", ()=>{
-      if (!purchased) {
-        purchased = true;
-        if (atcTime == null) atcTime = now();
-        const tta = Math.round(atcTime - t0);
-        logEvent("purchase", { ttaMs: tta, price: CONFIG.PRICE_EUR });
-        atc.disabled = true;
-        atc.textContent = "Purchased ✓";
-      }
-    });
-  }
+  atc?.addEventListener("click", ()=>{
+    if(!purchased){
+      purchased = true;
+      if(atcTime==null) atcTime = now();
+      const tta = Math.round(atcTime - t0);
+      logEvent("purchase", { ttaMs: tta, price: CONFIG.PRICE_EUR });
+      atc.disabled = true;
+      atc.textContent = "Purchased ✓";
+      updateCartUI();
+      openDrawer();
+    }
+  });
 
-  // Info panels (details open tracking)
   const sizePanel = document.getElementById("sizePanel");
   const retPanel  = document.getElementById("retPanel");
   function hookPanel(name, el){
@@ -134,27 +169,29 @@ function wireCommon(condition, startTimer = false){
   hookPanel("size_guide", sizePanel);
   hookPanel("returns", retPanel);
 
-  // ✅ Consent overlay (fix)
-  const cons = document.getElementById("cons");
+  const cartBtn = document.getElementById("cartBtn");
+  const closeBtn = document.getElementById("closeDrawer");
+  cartBtn?.addEventListener("click", ()=>{ openDrawer(); logEvent("cart_opened", { purchased }); });
+  closeBtn?.addEventListener("click", closeDrawer);
+  updateCartUI();
+
   const agreeBtn = document.getElementById("agreeBtn");
-  if (agreeBtn && cons) {
-    agreeBtn.addEventListener("click", ()=>{
-      cons.classList.add("hidden"); // make sure .hidden in CSS hides it
-      logEvent("consent_ok", {});
-    });
-  }
+  agreeBtn?.addEventListener("click", ()=>{
+    document.getElementById("cons")?.classList.add("hidden");
+    logEvent("consent_ok", {});
+  });
 
   if (startTimer) startCountdown();
 }
 
-/* ---------- Timer (Timer variant) ---------- */
+/* ---------- Timer ---------- */
 function startCountdown(){
   const out = document.getElementById("countdown");
   if (!out) return;
   let remain = 60;
   const render = ()=>{
-    const m = String(Math.floor(remain / 60)).padStart(2,"0");
-    const s = String(remain % 60).padStart(2,"0");
+    const m = String(Math.floor(remain/60)).padStart(2,"0");
+    const s = String(remain%60).padStart(2,"0");
     out.textContent = `${m}:${s}`;
   };
   render();
