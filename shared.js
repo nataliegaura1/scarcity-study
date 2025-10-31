@@ -4,11 +4,11 @@ const CONFIG = {
   ENDPOINT: "https://example.com/apps-script",
   PRODUCT_NAME: "Air Jordan 4 Retro 'White Cement' (2025)",
   PRICE_EUR: 119,
-  IMAGES: 
-    [jordan-air-jordan-4-retro-og-"white-cement"-(ps)-weiß-46527-1.avif
-jordan-air-jordan-4-retro-og-"white-cement"-(ps)-weiß-46527-3.avif
-jordan-air-jordan-4-retro-og-"white-cement"-(ps)-weiß-46527-5.avif
-jordan-air-jordan-4-retro-og-"white-cement"-(ps)-weiß-46527-6.avif
+  IMAGES: [
+    "images/jordan-air-jordan-4-retro-og-white-cement-ps-weiss-46527-1.avif",
+    "images/jordan-air-jordan-4-retro-og-white-cement-ps-weiss-46527-3.avif",
+    "images/jordan-air-jordan-4-retro-og-white-cement-ps-weiss-46527-5.avif",
+    "images/jordan-air-jordan-4-retro-og-white-cement-ps-weiss-46527-6.avif"
   ]
 };
 function uuidv4(){ return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16)); }
