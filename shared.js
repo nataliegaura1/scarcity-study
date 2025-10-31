@@ -1,4 +1,4 @@
-// Final version: robust carousel (no CSS dependency) + 1-minute timer + longer copy + Google Sheet logging
+// Final version: robust carousel (full-width) + 1-minute timer + longer copy + Google Sheet logging
 const CONFIG = {
   ENDPOINT: "https://script.google.com/macros/s/AKfycbw3yw3Tn3clqbg7z6Rt74KE3o7PZr-tXbRcTm9CVo7PfJrkZzQ3xhepSLa-CuX7ANR-mw/exec",
   PRODUCT_NAME: "Air Jordan 4 Retro 'White Cement' (2025)",
@@ -81,14 +81,13 @@ function renderGallery() {
   const wrap = $("gallery");
   if (!wrap) return;
 
-  // Build markup
+  // Full-width gallery inside the left column
   wrap.innerHTML = `
-    <div id="carousel" style="position:relative;display:flex;align-items:center;justify-content:center;">
+    <div id="carousel" style="position:relative;display:flex;align-items:center;justify-content:center;width:100%;">
       <button id="carouselPrev"
               aria-label="Previous image"
               style="position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:28px;padding:.25rem .5rem;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;">‹</button>
-      <div id="slidesWrap" style="width:100%;max-width:900px;">
-      </div>
+      <div id="slidesWrap" style="width:100%;max-width:none;margin:0 auto;"></div>
       <button id="carouselNext"
               aria-label="Next image"
               style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:28px;padding:.25rem .5rem;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;">›</button>
@@ -108,8 +107,11 @@ function renderGallery() {
     img.src = src;
     img.style.width = "100%";
     img.style.height = "auto";
-    img.style.borderRadius = "8px";
+    img.style.maxHeight = "70vh"; // keeps it big but not too tall; tweak if you like
+    img.style.objectFit = "contain";
+    img.style.borderRadius = "12px";
     img.style.display = (i === 0) ? "block" : "none";
+    img.decoding = "async";
     slidesWrap.appendChild(img);
 
     const dot = document.createElement("button");
