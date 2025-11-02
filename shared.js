@@ -204,7 +204,7 @@ function renderGallery(){
       <div id="slidesWrap"
         style="width:100%;max-width:100%;margin:0 auto;overflow:hidden;border-radius:16px;
                /* your current height settings (kept as-is) */
-               height: clamp(600px, 200vh, 820px);">
+               height: clamp(height: clamp(340px, 45vh, 520px););">
       </div>
 
       <button id="carouselNext"
