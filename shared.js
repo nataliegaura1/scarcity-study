@@ -81,13 +81,24 @@ function renderGallery() {
   const wrap = $("gallery");
   if (!wrap) return;
 
-  // Full-width gallery inside the left column (taller & image fills box)
+  // Make sure the gallery container itself doesn't constrain width
+  wrap.style.width = "100%";
+  wrap.style.maxWidth = "none";
+  wrap.style.margin = "0";
+  // (Optional) reduce any extra padding the theme might add around the gallery card
+  const card = wrap.closest(".card");
+  if (card) {
+    card.style.paddingLeft = card.style.paddingLeft || "16px";
+    card.style.paddingRight = card.style.paddingRight || "16px";
+  }
+
+  // Full-width gallery inside the left column (image fills both width and height)
   wrap.innerHTML = `
     <div id="carousel" style="position:relative;display:flex;align-items:center;justify-content:center;width:100%;">
       <button id="carouselPrev"
               aria-label="Previous image"
               style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);">‹</button>
-      <div id="slidesWrap" style="width:100%;max-width:none;margin:0 auto;height:75vh;overflow:hidden;border-radius:16px;"></div>
+      <div id="slidesWrap" style="width:100%;max-width:100%;margin:0;height:75vh;overflow:hidden;border-radius:16px;"></div>
       <button id="carouselNext"
               aria-label="Next image"
               style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);">›</button>
@@ -106,10 +117,10 @@ function renderGallery() {
     img.alt = "Jordan 4 product image";
     img.src = src;
 
-    // Fill the box:
+    // Fill the slides area completely
     img.style.width = "100%";
     img.style.height = "100%";
-    img.style.objectFit = "cover";         // <= makes the photo fill the white area
+    img.style.objectFit = "cover";   // fills width and height of slidesWrap
     img.style.borderRadius = "16px";
     img.style.display = (i === 0) ? "block" : "none";
     img.decoding = "async";
