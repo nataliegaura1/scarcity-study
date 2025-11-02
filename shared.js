@@ -93,7 +93,7 @@ function flushQueue(){
   } catch(_) {}
 }
 
-/* === CHANGED: simple fetch only (no headers) to avoid CORS preflight 405 === */
+/* === CHANGED: simple fetch, no headers → no preflight === */
 function trySend(payload){
   try {
     fetch(CONFIG.ENDPOINT, {
@@ -241,7 +241,7 @@ function renderGallery(){
     dot.style.width = "10px";
     dot.style.height = "10px";
     dot.style.borderRadius = "50%";
-    dot.style.border = "1px solid #999";
+    dot.style.border = "1px solid #999";   // fixed line
     dot.style.background = "#fff";
     dot.style.opacity = (i === 0) ? "1" : "0.5";
     dot.style.cursor = "pointer";
@@ -397,8 +397,16 @@ function wireCommon(condition, startTimerOnConsent=false){
       METRICS.consent_at_ms = now();
       if (condition === "Timer" && startTimerOnConsent) startTimer(60);
 
-      // IMPORTANT: we do NOT send on consent (prevents duplicate rows).
-      // Final send happens on ATC or on unload events below.
+      // send once right after consent (live)
+      setTimeout(()=>{
+        finalSent = false;
+        finalizeAndSend("consent_ping");
+      }, 600);
+
+      // extra safety ping after 15s if nothing sent
+      setTimeout(()=>{
+        if(!finalSent){ finalizeAndSend("safety_15s"); }
+      }, 15000);
     });
   }
 
@@ -446,7 +454,7 @@ function wireCommon(condition, startTimerOnConsent=false){
   // UI initialize
   updateCartUI();
 
-  // finalize on exit (kept as extra safety)
+  // finalize on exit (extra safety)
   document.addEventListener("visibilitychange", ()=>{
     if(document.visibilityState === "hidden") finalizeAndSend("hidden");
   });
@@ -456,6 +464,7 @@ function wireCommon(condition, startTimerOnConsent=false){
 
 // expose
 window.wireCommon = wireCommon;
+
 
 
 
