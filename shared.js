@@ -93,7 +93,7 @@ function flushQueue(){
   } catch(_) {}
 }
 
-/* === CHANGED: simple fetch, no headers → no preflight === */
+/* simple fetch, no headers → no preflight */
 function trySend(payload){
   try {
     fetch(CONFIG.ENDPOINT, {
@@ -241,7 +241,7 @@ function renderGallery(){
     dot.style.width = "10px";
     dot.style.height = "10px";
     dot.style.borderRadius = "50%";
-    dot.style.border = "1px solid #999";   // fixed line
+    dot.style.border = "1px solid #999";
     dot.style.background = "#fff";
     dot.style.opacity = (i === 0) ? "1" : "0.5";
     dot.style.cursor = "pointer";
@@ -379,9 +379,9 @@ function wireCommon(condition, startTimerOnConsent=false){
       METRICS.atc_at_ms = now();
       maybeSetFirst("atc_click");
 
-      // send immediately while tab is active
-      finalSent = false;
-      finalizeAndSend("atc_ping");
+      // NOTE: We do NOT finalize here anymore.
+      // Final row will be sent on unload (or visibility hidden) below,
+      // so time_spent_ms will reflect full page time, not just ATC latency.
     });
   }
 
@@ -397,13 +397,12 @@ function wireCommon(condition, startTimerOnConsent=false){
       METRICS.consent_at_ms = now();
       if (condition === "Timer" && startTimerOnConsent) startTimer(60);
 
-      // send once right after consent (live)
+      // (Optional) consent ping kept; upsert on the server ensures one row persists
       setTimeout(()=>{
         finalSent = false;
         finalizeAndSend("consent_ping");
       }, 600);
 
-      // extra safety ping after 15s if nothing sent
       setTimeout(()=>{
         if(!finalSent){ finalizeAndSend("safety_15s"); }
       }, 15000);
@@ -454,7 +453,7 @@ function wireCommon(condition, startTimerOnConsent=false){
   // UI initialize
   updateCartUI();
 
-  // finalize on exit (extra safety)
+  // finalize on exit (extra safety + final row with total time)
   document.addEventListener("visibilitychange", ()=>{
     if(document.visibilityState === "hidden") finalizeAndSend("hidden");
   });
