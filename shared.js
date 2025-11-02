@@ -378,10 +378,7 @@ function wireCommon(condition, startTimerOnConsent=false){
       METRICS.atc_clicked = true;
       METRICS.atc_at_ms = now();
       maybeSetFirst("atc_click");
-
-      // NOTE: We do NOT finalize here anymore.
-      // Final row will be sent on unload (or visibility hidden) below,
-      // so time_spent_ms will reflect full page time, not just ATC latency.
+      // NOTE: do NOT finalize here — final send on unload for full session timing
     });
   }
 
@@ -397,15 +394,8 @@ function wireCommon(condition, startTimerOnConsent=false){
       METRICS.consent_at_ms = now();
       if (condition === "Timer" && startTimerOnConsent) startTimer(60);
 
-      // (Optional) consent ping kept; upsert on the server ensures one row persists
-      setTimeout(()=>{
-        finalSent = false;
-        finalizeAndSend("consent_ping");
-      }, 600);
-
-      setTimeout(()=>{
-        if(!finalSent){ finalizeAndSend("safety_15s"); }
-      }, 15000);
+      // IMPORTANT: no consent ping — we only send once at the end.
+      finalSent = false; // ensure end events can send
     });
   }
 
@@ -453,7 +443,7 @@ function wireCommon(condition, startTimerOnConsent=false){
   // UI initialize
   updateCartUI();
 
-  // finalize on exit (extra safety + final row with total time)
+  // finalize on exit (the single, final row)
   document.addEventListener("visibilitychange", ()=>{
     if(document.visibilityState === "hidden") finalizeAndSend("hidden");
   });
@@ -463,6 +453,7 @@ function wireCommon(condition, startTimerOnConsent=false){
 
 // expose
 window.wireCommon = wireCommon;
+
 
 
 
