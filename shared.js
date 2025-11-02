@@ -188,10 +188,11 @@ function renderGallery(){
   const wrap = document.getElementById("gallery");
   if(!wrap) return;
 
-  // preserve your current sizing (exactly as you had)
+  // keep overall card sizing
   wrap.style.width = "100%";
   wrap.style.maxWidth = "none";
   wrap.style.margin = "0";
+  wrap.style.padding = "0";
   const card = wrap.closest(".card");
   if (card) card.style.paddingBottom = "16px";
 
@@ -202,9 +203,16 @@ function renderGallery(){
         style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2;">‹</button>
 
       <div id="slidesWrap"
-        style="width:100%;max-width:100%;margin:0 auto;overflow:hidden;border-radius:16px;
-               /* your current height settings (kept as-is) */
-               height: clamp(height: clamp(340px, 45vh, 520px););">
+        style="width:100%;
+               max-width:100%;
+               margin:0 auto;
+               overflow:hidden;
+               border-radius:16px;
+               height: clamp(750px, 90vh, 950px);   /* taller so it fills the card */
+               aspect-ratio: 4 / 3;                 /* wide product shape */
+               display:flex;
+               align-items:center;
+               justify-content:center;">
       </div>
 
       <button id="carouselNext"
@@ -225,9 +233,10 @@ function renderGallery(){
     img.alt = "Jordan 4 product image";
     img.src = src;
 
+    // fill the container
     img.style.width = "100%";
     img.style.height = "100%";
-    img.style.objectFit = "cover";
+    img.style.objectFit = "contain";   // changed from "cover"
     img.style.borderRadius = "16px";
     img.style.display = (i === 0) ? "block" : "none";
     img.decoding = "async";
@@ -269,6 +278,7 @@ function renderGallery(){
   carouselIndex = 0;
   updateCarousel();
 }
+
 
 /* -----------------------
    Cart drawer & ATC
