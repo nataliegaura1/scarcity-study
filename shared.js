@@ -1,4 +1,4 @@
-// Final version: robust carousel (full-width) + 1-minute timer + longer copy + Google Sheet logging
+// Final version: robust carousel (full-width, wide images) + 1-minute timer + longer copy + Google Sheet logging
 const CONFIG = {
   ENDPOINT: "https://script.google.com/macros/s/AKfycbw3yw3Tn3clqbg7z6Rt74KE3o7PZr-tXbRcTm9CVo7PfJrkZzQ3xhepSLa-CuX7ANR-mw/exec",
   PRODUCT_NAME: "Air Jordan 4 Retro 'White Cement' (2025)",
@@ -50,12 +50,11 @@ async function logEvent(event, extra = {}) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-      // If Apps Script lacks CORS, switch to: mode: "no-cors"
     });
   } catch (e) { /* ignore logging errors */ }
 }
 
-// --- carousel (render all images; toggle visibility in JS) ---
+// --- carousel ---
 function updateCarousel() {
   const slidesWrap = $("slidesWrap");
   const dotsWrap = $("carouselDots");
@@ -81,46 +80,38 @@ function renderGallery() {
   const wrap = $("gallery");
   if (!wrap) return;
 
-  // Make sure the gallery container itself doesn't constrain width
-  wrap.style.width = "100%";
-  wrap.style.maxWidth = "none";
-  wrap.style.margin = "0";
-  // (Optional) reduce any extra padding the theme might add around the gallery card
-  const card = wrap.closest(".card");
-  if (card) {
-    card.style.paddingLeft = card.style.paddingLeft || "16px";
-    card.style.paddingRight = card.style.paddingRight || "16px";
-  }
-
-  // Full-width gallery inside the left column (image fills both width and height)
+  // Full-width flexible gallery
   wrap.innerHTML = `
     <div id="carousel" style="position:relative;display:flex;align-items:center;justify-content:center;width:100%;">
       <button id="carouselPrev"
-              aria-label="Previous image"
-              style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);">‹</button>
-      <div id="slidesWrap" style="width:100%;max-width:100%;margin:0;height:75vh;overflow:hidden;border-radius:16px;"></div>
+        aria-label="Previous image"
+        style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2;">‹</button>
+
+      <div id="slidesWrap" style="width:100%;max-width:100%;margin:0 auto;overflow:hidden;border-radius:16px;">
+      </div>
+
       <button id="carouselNext"
-              aria-label="Next image"
-              style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);">›</button>
+        aria-label="Next image"
+        style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2;">›</button>
+
       <div id="carouselDots" aria-label="Image selector"
-           style="position:absolute;bottom:10px;display:flex;gap:8px;"></div>
+        style="position:absolute;bottom:10px;display:flex;gap:8px;z-index:2;"></div>
     </div>
   `;
 
   const slidesWrap = $("slidesWrap");
   const dotsWrap = $("carouselDots");
 
-  // Create <img> slides (visible first one, others hidden)
   CONFIG.IMAGES.forEach((src, i) => {
     const img = document.createElement("img");
     img.setAttribute("data-slide", i.toString());
     img.alt = "Jordan 4 product image";
     img.src = src;
 
-    // Fill the slides area completely
+    // Key part: make it wide, preserve shape
     img.style.width = "100%";
-    img.style.height = "100%";
-    img.style.objectFit = "cover";   // fills width and height of slidesWrap
+    img.style.height = "auto";
+    img.style.objectFit = "contain";
     img.style.borderRadius = "16px";
     img.style.display = (i === 0) ? "block" : "none";
     img.decoding = "async";
@@ -141,16 +132,10 @@ function renderGallery() {
     dotsWrap.appendChild(dot);
   });
 
-  // Controls
   $("carouselPrev").addEventListener("click", () => { carouselIndex--; updateCarousel(); });
   $("carouselNext").addEventListener("click", () => { carouselIndex++; updateCarousel(); });
 
-  // Keyboard & swipe (basic)
   let touchStartX = null;
-  wrap.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowLeft") { carouselIndex--; updateCarousel(); }
-    if (e.key === "ArrowRight") { carouselIndex++; updateCarousel(); }
-  });
   wrap.addEventListener("touchstart", (e) => { touchStartX = e.changedTouches[0].clientX; }, { passive: true });
   wrap.addEventListener("touchend", (e) => {
     if (touchStartX == null) return;
@@ -159,7 +144,6 @@ function renderGallery() {
     touchStartX = null;
   }, { passive: true });
 
-  // Initial state
   carouselIndex = 0;
   updateCarousel();
 }
@@ -217,10 +201,8 @@ function startTimer(seconds = 60) {
 
 // --- main wiring ---
 function wireCommon(condition, startTimerOnConsent = false) {
-  // render carousel
   renderGallery();
 
-  // Add handlers
   const atc = $("atcBtn");
   if (atc) {
     atc.addEventListener("click", () => {
@@ -235,8 +217,12 @@ function wireCommon(condition, startTimerOnConsent = false) {
       });
     });
   }
-  const cartBtn = $("cartBtn"); if (cartBtn) cartBtn.addEventListener("click", openDrawer);
-  const closeBtn = $("closeDrawer"); if (closeBtn) closeBtn.addEventListener("click", closeDrawer);
+
+  const cartBtn = $("cartBtn");
+  if (cartBtn) cartBtn.addEventListener("click", openDrawer);
+
+  const closeBtn = $("closeDrawer");
+  if (closeBtn) closeBtn.addEventListener("click", closeDrawer);
 
   const agree = $("agreeBtn");
   if (agree) {
@@ -247,14 +233,12 @@ function wireCommon(condition, startTimerOnConsent = false) {
     });
   }
 
-  // Initialize UI states
   updateCartUI();
-
-  // Log page view
   logEvent("page_view");
 }
 
-// expose for pages
+// expose
 window.wireCommon = wireCommon;
+
 
 
