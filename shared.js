@@ -1,4 +1,4 @@
-// Final version: robust carousel (full-width, wide images) + 1-minute timer + longer copy + Google Sheet logging
+// Final version: wide, full-width carousel (landscape crop) + 1-minute timer + longer copy + Google Sheet logging (no-CORS)
 const CONFIG = {
   ENDPOINT: "https://script.google.com/macros/s/AKfycbw3yw3Tn3clqbg7z6Rt74KE3o7PZr-tXbRcTm9CVo7PfJrkZzQ3xhepSLa-CuX7ANR-mw/exec",
   PRODUCT_NAME: "Air Jordan 4 Retro 'White Cement' (2025)",
@@ -46,12 +46,14 @@ async function logEvent(event, extra = {}) {
       userAgent: navigator.userAgent,
       ...extra
     };
+    // Avoid preflight/405 on GitHub Pages → Apps Script
     await fetch(CONFIG.ENDPOINT, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      mode: "no-cors",
+      // No JSON header → no preflight; body is still sent
+      body: JSON.stringify(body)
     });
-  } catch (e) { /* ignore logging errors */ }
+  } catch (_) { /* ignore logging errors */ }
 }
 
 // --- carousel ---
@@ -63,14 +65,12 @@ function updateCarousel() {
   const slides = Array.from(slidesWrap.querySelectorAll("img[data-slide]"));
   if (!slides.length) return;
 
-  // clamp index
   if (carouselIndex < 0) carouselIndex = slides.length - 1;
   if (carouselIndex >= slides.length) carouselIndex = 0;
 
   slides.forEach((img, idx) => {
     img.style.display = (idx === carouselIndex) ? "block" : "none";
   });
-
   Array.from(dotsWrap.children).forEach((btn, i) => {
     btn.style.opacity = (i === carouselIndex) ? "1" : "0.5";
   });
@@ -80,165 +80,27 @@ function renderGallery() {
   const wrap = $("gallery");
   if (!wrap) return;
 
-  // Full-width flexible gallery
+  // Make sure the container can use the full column width
+  wrap.style.width = "100%";
+  wrap.style.maxWidth = "none";
+
+  // Landscape, full-width crop like your previous version:
+  // - fixed-height band that scales with viewport but stays reasonable
+  // - images use object-fit: cover to fill width and height
   wrap.innerHTML = `
     <div id="carousel" style="position:relative;display:flex;align-items:center;justify-content:center;width:100%;">
       <button id="carouselPrev"
         aria-label="Previous image"
         style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2;">‹</button>
 
-      <div id="slidesWrap" style="width:100%;max-width:100%;margin:0 auto;overflow:hidden;border-radius:16px;">
+      <div id="slidesWrap"
+        style="width:100%;max-width:100%;margin:0 auto;height:clamp(280px, 36vh, 520px);overflow:hidden;border-radius:16px;">
       </div>
 
       <button id="carouselNext"
         aria-label="Next image"
-        style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2;">›</button>
+        style="position:absolute;right:12px;to
 
-      <div id="carouselDots" aria-label="Image selector"
-        style="position:absolute;bottom:10px;display:flex;gap:8px;z-index:2;"></div>
-    </div>
-  `;
-
-  const slidesWrap = $("slidesWrap");
-  const dotsWrap = $("carouselDots");
-
-  CONFIG.IMAGES.forEach((src, i) => {
-    const img = document.createElement("img");
-    img.setAttribute("data-slide", i.toString());
-    img.alt = "Jordan 4 product image";
-    img.src = src;
-
-    // Key part: make it wide, preserve shape
-    img.style.width = "100%";
-    img.style.height = "auto";
-    img.style.objectFit = "contain";
-    img.style.borderRadius = "16px";
-    img.style.display = (i === 0) ? "block" : "none";
-    img.decoding = "async";
-
-    slidesWrap.appendChild(img);
-
-    const dot = document.createElement("button");
-    dot.type = "button";
-    dot.setAttribute("aria-label", `Show image ${i + 1}`);
-    dot.style.width = "10px";
-    dot.style.height = "10px";
-    dot.style.borderRadius = "50%";
-    dot.style.border = "1px solid #999";
-    dot.style.background = "#fff";
-    dot.style.opacity = (i === 0) ? "1" : "0.5";
-    dot.style.cursor = "pointer";
-    dot.addEventListener("click", () => { carouselIndex = i; updateCarousel(); });
-    dotsWrap.appendChild(dot);
-  });
-
-  $("carouselPrev").addEventListener("click", () => { carouselIndex--; updateCarousel(); });
-  $("carouselNext").addEventListener("click", () => { carouselIndex++; updateCarousel(); });
-
-  let touchStartX = null;
-  wrap.addEventListener("touchstart", (e) => { touchStartX = e.changedTouches[0].clientX; }, { passive: true });
-  wrap.addEventListener("touchend", (e) => {
-    if (touchStartX == null) return;
-    const dx = e.changedTouches[0].clientX - touchStartX;
-    if (Math.abs(dx) > 40) { carouselIndex += (dx < 0 ? 1 : -1); updateCarousel(); }
-    touchStartX = null;
-  }, { passive: true });
-
-  carouselIndex = 0;
-  updateCarousel();
-}
-
-// --- cart drawer ---
-function openDrawer() { $("drawer").classList.add("open"); }
-function closeDrawer() { $("drawer").classList.remove("open"); }
-function updateCartUI() {
-  const empty = $("cartEmpty");
-  const item = $("cartItem");
-  const count = $("cartCount");
-  if (!empty || !item || !count) return;
-  if (purchased) {
-    empty.style.display = "none";
-    item.style.display = "grid";
-    count.textContent = "1";
-  } else {
-    empty.style.display = "block";
-    item.style.display = "none";
-    count.textContent = "0";
-  }
-}
-
-// --- timer (Timer condition only) ---
-function startTimer(seconds = 60) {
-  const pill = $("timerPill");
-  const out = $("countdown");
-  if (!out || !pill) return;
-
-  if (timerInterval) clearInterval(timerInterval);
-  timerStartTs = Date.now();
-  remainingMs = seconds * 1000;
-  out.textContent = "01:00";
-
-  timerInterval = setInterval(() => {
-    const elapsed = Date.now() - timerStartTs;
-    remainingMs = Math.max(0, seconds * 1000 - elapsed);
-    out.textContent = formatMMSS(remainingMs);
-
-    if (remainingMs <= 0) {
-      clearInterval(timerInterval);
-      pill.textContent = "Offer ended";
-      pill.style.background = "#eee";
-      pill.style.color = "#666";
-      const atc = $("atcBtn");
-      if (atc) {
-        atc.disabled = true;
-        atc.style.opacity = "0.6";
-        atc.style.cursor = "not-allowed";
-      }
-      logEvent("timer_expired");
-    }
-  }, 250);
-}
-
-// --- main wiring ---
-function wireCommon(condition, startTimerOnConsent = false) {
-  renderGallery();
-
-  const atc = $("atcBtn");
-  if (atc) {
-    atc.addEventListener("click", () => {
-      if (purchased) return;
-      purchased = true;
-      atc.disabled = true;
-      atc.textContent = "Purchased ✓";
-      updateCartUI();
-      openDrawer();
-      logEvent("purchase", {
-        remainingMsAtPurchase: typeof remainingMs === "number" ? remainingMs : null
-      });
-    });
-  }
-
-  const cartBtn = $("cartBtn");
-  if (cartBtn) cartBtn.addEventListener("click", openDrawer);
-
-  const closeBtn = $("closeDrawer");
-  if (closeBtn) closeBtn.addEventListener("click", closeDrawer);
-
-  const agree = $("agreeBtn");
-  if (agree) {
-    agree.addEventListener("click", () => {
-      $("cons").classList.add("hidden");
-      logEvent("consent_agreed");
-      if (condition === "Timer" && startTimerOnConsent) startTimer(60);
-    });
-  }
-
-  updateCartUI();
-  logEvent("page_view");
-}
-
-// expose
-window.wireCommon = wireCommon;
 
 
 
