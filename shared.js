@@ -169,7 +169,7 @@ function finalizeAndSend(reason){
 }
 
 /* -----------------------
-   Carousel (keep layout)
+   Carousel (keep layout) — UPDATED PICTURE PART ONLY
 ------------------------*/
 let carouselIndex = 0;
 function updateCarousel(){
@@ -196,24 +196,20 @@ function renderGallery(){
   const card = wrap.closest(".card");
   if (card) card.style.paddingBottom = "16px";
 
+  // Bigger, wider image area that fills the black card
   wrap.innerHTML = `
     <div id="carousel" style="position:relative;display:flex;align-items:center;justify-content:center;width:100%;">
       <button id="carouselPrev"
         aria-label="Previous image"
         style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2;">‹</button>
 
-     <div id="slidesWrap"
-  style="width:100%;
-         max-width:100%;
-         margin:0;
-         overflow:hidden;
-         border-radius:16px;
-         height: clamp(720px, 75vh, 920px);">
-</div>   /* taller so it fills the card */
-               aspect-ratio: 4 / 3;                 /* wide product shape */
-               display:flex;
-               align-items:center;
-               justify-content:center;">
+      <div id="slidesWrap"
+        style="width:100%;
+               max-width:100%;
+               margin:0;
+               overflow:hidden;
+               border-radius:16px;
+               height: clamp(820px, 80vh, 1100px);">
       </div>
 
       <button id="carouselNext"
@@ -234,10 +230,10 @@ function renderGallery(){
     img.alt = "Jordan 4 product image";
     img.src = src;
 
-    // fill the container
+    // Fill the container (bigger + wider) — this is the only change that matters visually
     img.style.width = "100%";
     img.style.height = "100%";
-    img.style.objectFit = "contain";   // changed from "cover"
+    img.style.objectFit = "cover";   // fill the area, no letterboxing
     img.style.borderRadius = "16px";
     img.style.display = (i === 0) ? "block" : "none";
     img.decoding = "async";
@@ -279,7 +275,6 @@ function renderGallery(){
   carouselIndex = 0;
   updateCarousel();
 }
-
 
 /* -----------------------
    Cart drawer & ATC
