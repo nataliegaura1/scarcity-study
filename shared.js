@@ -1,6 +1,6 @@
 // Final telemetry build: ONE ROW / PARTICIPANT + current UI preserved
 const CONFIG = {
-  ENDPOINT: "https://script.google.com/macros/s/AKfycbwgH7Xksx_1seXgTdRHm1w0MWNXV2VvvAgeB_lK89GGZaTfY-_ikRlIOuwZfT_Yu5w/exec",
+  ENDPOINT: "https://script.google.com/macros/s/AKfycbzCi9a9sy9Np3_bnGck_kVDSsoWd_m9zJrM7yt85gOJrOgFz_qmx8L_zny9bzI54wWdQg/exec",
   PRODUCT_NAME: "Air Jordan 4 Retro 'White Cement' (2025)",
   PRICE_EUR: 119,
   IMAGES: [
@@ -456,6 +456,7 @@ function wireCommon(condition, startTimerOnConsent=false){
 
 // expose
 window.wireCommon = wireCommon;
+
 
 
 
