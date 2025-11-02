@@ -169,7 +169,7 @@ function finalizeAndSend(reason){
 }
 
 /* -----------------------
-   Carousel (keep layout) — UPDATED PICTURE PART ONLY
+   Carousel (keep layout) — PICTURE PART ONLY CHANGED
 ------------------------*/
 let carouselIndex = 0;
 function updateCarousel(){
@@ -184,80 +184,66 @@ function updateCarousel(){
   Array.from(dotsWrap.children).forEach((btn, i)=>{ btn.style.opacity = (i === carouselIndex) ? "1" : "0.5"; });
 }
 
-function renderGallery() {
+function renderGallery(){
   const wrap = document.getElementById("gallery");
-  if (!wrap) return;
+  if(!wrap) return;
 
+  // keep the card bounds; only change the picture region itself
   wrap.style.width = "100%";
   wrap.style.maxWidth = "none";
-  wrap.style.margin = "0 auto";
-  wrap.style.padding = "0";
+  wrap.style.margin = "0";
   const card = wrap.closest(".card");
   if (card) card.style.paddingBottom = "16px";
 
-  // Wider layout (4:3 aspect ratio)
+  // StockX-like wide stage (≈5:3) + thumbnail row below
   wrap.innerHTML = `
-    <div id="carousel" 
-         style="position:relative;
-                display:flex;
-                align-items:center;
-                justify-content:center;
-                width:100%;
-                max-width:900px;
-                margin:0 auto;">
-      <button id="carouselPrev"
-        aria-label="Previous image"
-        style="position:absolute;left:12px;top:50%;transform:translateY(-50%);
-               font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;
-               border-radius:50%;background:#fff;cursor:pointer;
-               box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2;">‹</button>
+    <div id="carousel" style="position:relative;display:flex;flex-direction:column;gap:12px;width:100%;">
+      <div style="position:relative;">
+        <button id="carouselPrev"
+          aria-label="Previous image"
+          style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2;">‹</button>
 
-      <div id="slidesWrap"
-        style="width:100%;
-               overflow:hidden;
-               border-radius:16px;
-               aspect-ratio: 4 / 3;
-               background:#000;">
+        <div id="slidesWrap"
+          style="width:100%;max-width:980px;margin:0 auto;overflow:hidden;border-radius:16px;
+                 aspect-ratio: 5 / 3; background:#0f1419; display:flex; align-items:center; justify-content:center;">
+        </div>
+
+        <button id="carouselNext"
+          aria-label="Next image"
+          style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2;">›</button>
+
+        <div id="carouselDots" aria-label="Image selector"
+          style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:2;"></div>
       </div>
 
-      <button id="carouselNext"
-        aria-label="Next image"
-        style="position:absolute;right:12px;top:50%;transform:translateY(-50%);
-               font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;
-               border-radius:50%;background:#fff;cursor:pointer;
-               box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2;">›</button>
-
-      <div id="carouselDots" aria-label="Image selector"
-        style="position:absolute;bottom:10px;display:flex;gap:8px;z-index:2;"></div>
+      <!-- “Browse more” style row -->
+      <div id="moreRow" style="display:flex;flex-wrap:nowrap;gap:10px;justify-content:center;max-width:980px;margin:0 auto;">
+      </div>
     </div>
   `;
 
   const slidesWrap = document.getElementById("slidesWrap");
   const dotsWrap = document.getElementById("carouselDots");
+  const moreRow = document.getElementById("moreRow");
 
-  CONFIG.IMAGES.forEach((src, i) => {
+  // Main slides
+  CONFIG.IMAGES.forEach((src, i)=>{
     const img = document.createElement("img");
     img.setAttribute("data-slide", String(i));
     img.alt = "Jordan 4 product image";
     img.src = src;
-
-    // Wider, natural image scaling
     img.style.width = "100%";
     img.style.height = "100%";
-    img.style.objectFit = "contain"; // keeps shoe proportions
-    img.style.borderRadius = "16px";
+    img.style.objectFit = "contain";     // keep shoe proportions, fill nicely
     img.style.display = (i === 0) ? "block" : "none";
     img.decoding = "async";
-
-    img.addEventListener("click", () => {
-      METRICS.clicks_total++;
-      maybeSetFirst("gallery_interaction");
-    });
+    img.addEventListener("click", ()=>{ METRICS.clicks_total++; maybeSetFirst("gallery_interaction"); });
     slidesWrap.appendChild(img);
 
+    // dots
     const dot = document.createElement("button");
     dot.type = "button";
-    dot.setAttribute("aria-label", `Show image ${i + 1}`);
+    dot.setAttribute("aria-label", `Show image ${i+1}`);
     dot.style.width = "10px";
     dot.style.height = "10px";
     dot.style.borderRadius = "50%";
@@ -265,63 +251,51 @@ function renderGallery() {
     dot.style.background = "#fff";
     dot.style.opacity = (i === 0) ? "1" : "0.5";
     dot.style.cursor = "pointer";
-    dot.addEventListener("click", () => {
-      carouselIndex = i;
-      updateCarousel();
-      METRICS.clicks_total++;
-      maybeSetFirst("gallery_dot");
-    });
+    dot.addEventListener("click", ()=>{ carouselIndex = i; updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_dot"); });
     dotsWrap.appendChild(dot);
+
+    // “browse more” thumbs (small, clickable)
+    const thumbWrap = document.createElement("button");
+    thumbWrap.type = "button";
+    thumbWrap.style.border = "1px solid #1f2530";
+    thumbWrap.style.background = "#0f1419";
+    thumbWrap.style.borderRadius = "12px";
+    thumbWrap.style.padding = "6px";
+    thumbWrap.style.cursor = "pointer";
+    thumbWrap.style.display = "grid";
+    thumbWrap.style.placeItems = "center";
+    thumbWrap.addEventListener("click", ()=>{ carouselIndex = i; updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_thumb"); });
+
+    const t = document.createElement("img");
+    t.src = src;
+    t.alt = "Other option";
+    t.style.width = "120px";
+    t.style.height = "80px";
+    t.style.objectFit = "contain";
+    thumbWrap.appendChild(t);
+    moreRow.appendChild(thumbWrap);
   });
 
-  document.getElementById("carouselPrev").addEventListener("click", () => {
-    carouselIndex--;
-    updateCarousel();
-    METRICS.clicks_total++;
-    maybeSetFirst("gallery_prev");
-  });
-  document.getElementById("carouselNext").addEventListener("click", () => {
-    carouselIndex++;
-    updateCarousel();
-    METRICS.clicks_total++;
-    maybeSetFirst("gallery_next");
-  });
+  document.getElementById("carouselPrev").addEventListener("click", ()=>{ carouselIndex--; updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_prev"); });
+  document.getElementById("carouselNext").addEventListener("click", ()=>{ carouselIndex++; updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_next"); });
 
   // keyboard & swipe
   let touchStartX = null;
-  wrap.addEventListener("keydown", (e) => {
-    if (e.key === "ArrowLeft") {
-      carouselIndex--;
-      updateCarousel();
-      METRICS.clicks_total++;
-      maybeSetFirst("gallery_key_prev");
-    }
-    if (e.key === "ArrowRight") {
-      carouselIndex++;
-      updateCarousel();
-      METRICS.clicks_total++;
-      maybeSetFirst("gallery_key_next");
-    }
+  wrap.addEventListener("keydown",(e)=>{
+    if(e.key==="ArrowLeft"){ carouselIndex--; updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_key_prev"); }
+    if(e.key==="ArrowRight"){ carouselIndex++; updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_key_next"); }
   });
-  wrap.addEventListener("touchstart", (e) => {
-    touchStartX = e.changedTouches[0].clientX;
-  }, { passive: true });
-  wrap.addEventListener("touchend", (e) => {
-    if (touchStartX == null) return;
+  wrap.addEventListener("touchstart",(e)=>{ touchStartX = e.changedTouches[0].clientX; },{passive:true});
+  wrap.addEventListener("touchend",(e)=>{
+    if(touchStartX==null) return;
     const dx = e.changedTouches[0].clientX - touchStartX;
-    if (Math.abs(dx) > 40) {
-      carouselIndex += (dx < 0 ? 1 : -1);
-      updateCarousel();
-      METRICS.clicks_total++;
-      maybeSetFirst("gallery_swipe");
-    }
+    if(Math.abs(dx)>40){ carouselIndex += (dx<0?1:-1); updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_swipe"); }
     touchStartX = null;
-  }, { passive: true });
+  },{passive:true});
 
   carouselIndex = 0;
   updateCarousel();
 }
-
 
 /* -----------------------
    Cart drawer & ATC
@@ -506,6 +480,7 @@ function wireCommon(condition, startTimerOnConsent=false){
 
 // expose
 window.wireCommon = wireCommon;
+
 
 
 
