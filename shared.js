@@ -81,18 +81,18 @@ function renderGallery() {
   const wrap = $("gallery");
   if (!wrap) return;
 
-  // Full-width gallery inside the left column
+  // Full-width gallery inside the left column (taller & image fills box)
   wrap.innerHTML = `
     <div id="carousel" style="position:relative;display:flex;align-items:center;justify-content:center;width:100%;">
       <button id="carouselPrev"
               aria-label="Previous image"
-              style="position:absolute;left:8px;top:50%;transform:translateY(-50%);font-size:28px;padding:.25rem .5rem;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;">‹</button>
-      <div id="slidesWrap" style="width:100%;max-width:none;margin:0 auto;"></div>
+              style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);">‹</button>
+      <div id="slidesWrap" style="width:100%;max-width:none;margin:0 auto;height:75vh;overflow:hidden;border-radius:16px;"></div>
       <button id="carouselNext"
               aria-label="Next image"
-              style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:28px;padding:.25rem .5rem;border:1px solid #ddd;border-radius:8px;background:#fff;cursor:pointer;">›</button>
+              style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);">›</button>
       <div id="carouselDots" aria-label="Image selector"
-           style="position:absolute;bottom:8px;display:flex;gap:6px;"></div>
+           style="position:absolute;bottom:10px;display:flex;gap:8px;"></div>
     </div>
   `;
 
@@ -105,13 +105,15 @@ function renderGallery() {
     img.setAttribute("data-slide", i.toString());
     img.alt = "Jordan 4 product image";
     img.src = src;
+
+    // Fill the box:
     img.style.width = "100%";
-    img.style.height = "auto";
-    img.style.maxHeight = "70vh"; // keeps it big but not too tall; tweak if you like
-    img.style.objectFit = "contain";
-    img.style.borderRadius = "12px";
+    img.style.height = "100%";
+    img.style.objectFit = "cover";         // <= makes the photo fill the white area
+    img.style.borderRadius = "16px";
     img.style.display = (i === 0) ? "block" : "none";
     img.decoding = "async";
+
     slidesWrap.appendChild(img);
 
     const dot = document.createElement("button");
