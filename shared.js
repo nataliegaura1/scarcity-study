@@ -1,4 +1,4 @@
-// Final version: wide, full-width carousel (landscape crop) + 1-minute timer + longer copy + Google Sheet logging (no-CORS)
+// Final version: robust carousel (full-width, landscape band) + 1-minute timer + longer copy + Google Sheet logging
 const CONFIG = {
   ENDPOINT: "https://script.google.com/macros/s/AKfycbw3yw3Tn3clqbg7z6Rt74KE3o7PZr-tXbRcTm9CVo7PfJrkZzQ3xhepSLa-CuX7ANR-mw/exec",
   PRODUCT_NAME: "Air Jordan 4 Retro 'White Cement' (2025)",
@@ -11,7 +11,6 @@ const CONFIG = {
   ]
 };
 
-// --- state ---
 let purchased = false;
 let sessionId = localStorage.getItem("ml_session");
 if (!sessionId) {
@@ -24,20 +23,19 @@ let timerInterval = null;
 let timerStartTs = null;
 let remainingMs = 0;
 
-// --- helpers ---
-function $(id) { return document.getElementById(id); }
-function formatMMSS(ms) {
-  const sec = Math.max(0, Math.ceil(ms / 1000));
-  const m = Math.floor(sec / 60).toString().padStart(2, "0");
-  const s = (sec % 60).toString().padStart(2, "0");
+// helpers
+function $(id){ return document.getElementById(id); }
+function formatMMSS(ms){
+  const sec = Math.max(0, Math.ceil(ms/1000));
+  const m = Math.floor(sec/60).toString().padStart(2,"0");
+  const s = (sec%60).toString().padStart(2,"0");
   return `${m}:${s}`;
 }
-async function logEvent(event, extra = {}) {
-  try {
+async function logEvent(event, extra={}){
+  try{
     const body = {
       timestamp: new Date().toISOString(),
-      sessionId,
-      event,
+      sessionId, event,
       condition: window.__COND || "Unknown",
       product: CONFIG.PRODUCT_NAME,
       priceEUR: CONFIG.PRICE_EUR,
@@ -46,47 +44,44 @@ async function logEvent(event, extra = {}) {
       userAgent: navigator.userAgent,
       ...extra
     };
-    // Avoid preflight/405 on GitHub Pages → Apps Script
     await fetch(CONFIG.ENDPOINT, {
       method: "POST",
-      mode: "no-cors",
-      // No JSON header → no preflight; body is still sent
+      headers: { "Content-Type":"application/json" },
       body: JSON.stringify(body)
     });
-  } catch (_) { /* ignore logging errors */ }
+  }catch(e){ /* ignore */ }
 }
 
 // --- carousel ---
-function updateCarousel() {
+function updateCarousel(){
   const slidesWrap = $("slidesWrap");
   const dotsWrap = $("carouselDots");
-  if (!slidesWrap || !dotsWrap) return;
+  if(!slidesWrap || !dotsWrap) return;
 
   const slides = Array.from(slidesWrap.querySelectorAll("img[data-slide]"));
-  if (!slides.length) return;
+  if(!slides.length) return;
 
-  if (carouselIndex < 0) carouselIndex = slides.length - 1;
-  if (carouselIndex >= slides.length) carouselIndex = 0;
+  if(carouselIndex < 0) carouselIndex = slides.length - 1;
+  if(carouselIndex >= slides.length) carouselIndex = 0;
 
-  slides.forEach((img, idx) => {
+  slides.forEach((img, idx)=>{
     img.style.display = (idx === carouselIndex) ? "block" : "none";
   });
-  Array.from(dotsWrap.children).forEach((btn, i) => {
+  Array.from(dotsWrap.children).forEach((btn,i)=>{
     btn.style.opacity = (i === carouselIndex) ? "1" : "0.5";
   });
 }
 
-function renderGallery() {
+function renderGallery(){
   const wrap = $("gallery");
-  if (!wrap) return;
+  if(!wrap) return;
 
-  // Make sure the container can use the full column width
+  // ensure container can use full column width
   wrap.style.width = "100%";
   wrap.style.maxWidth = "none";
+  wrap.style.margin = "0";
 
-  // Landscape, full-width crop like your previous version:
-  // - fixed-height band that scales with viewport but stays reasonable
-  // - images use object-fit: cover to fill width and height
+  // Landscape band (fills width). Uses aspect-ratio for consistent height.
   wrap.innerHTML = `
     <div id="carousel" style="position:relative;display:flex;align-items:center;justify-content:center;width:100%;">
       <button id="carouselPrev"
@@ -94,12 +89,140 @@ function renderGallery() {
         style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2;">‹</button>
 
       <div id="slidesWrap"
-        style="width:100%;max-width:100%;margin:0 auto;height:clamp(280px, 36vh, 520px);overflow:hidden;border-radius:16px;">
+        style="width:100%;max-width:100%;margin:0 auto;overflow:hidden;border-radius:16px;
+               aspect-ratio:16/9; min-height:260px; max-height:540px;">
       </div>
 
       <button id="carouselNext"
         aria-label="Next image"
-        style="position:absolute;right:12px;to
+        style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2;">›</button>
+
+      <div id="carouselDots" aria-label="Image selector"
+        style="position:absolute;bottom:10px;display:flex;gap:8px;z-index:2;"></div>
+    </div>
+  `;
+
+  const slidesWrap = $("slidesWrap");
+  const dotsWrap = $("carouselDots");
+
+  CONFIG.IMAGES.forEach((src, i)=>{
+    const img = document.createElement("img");
+    img.setAttribute("data-slide", String(i));
+    img.alt = "Jordan 4 product image";
+    img.src = src;
+
+    // Fill width & height of the landscape band (cropping top/bottom as needed)
+    img.style.width = "100%";
+    img.style.height = "100%";
+    img.style.objectFit = "cover";
+    img.style.borderRadius = "16px";
+    img.style.display = (i === 0) ? "block" : "none";
+    img.decoding = "async";
+    slidesWrap.appendChild(img);
+
+    const dot = document.createElement("button");
+    dot.type = "button";
+    dot.setAttribute("aria-label", `Show image ${i+1}`);
+    dot.style.width = "10px";
+    dot.style.height = "10px";
+    dot.style.borderRadius = "50%";
+    dot.style.border = "1px solid #999";
+    dot.style.background = "#fff";
+    dot.style.opacity = (i === 0) ? "1" : "0.5";
+    dot.style.cursor = "pointer";
+    dot.addEventListener("click", ()=>{ carouselIndex = i; updateCarousel(); });
+    dotsWrap.appendChild(dot);
+  });
+
+  $("carouselPrev").addEventListener("click", ()=>{ carouselIndex--; updateCarousel(); });
+  $("carouselNext").addEventListener("click", ()=>{ carouselIndex++; updateCarousel(); });
+
+  // swipe
+  let touchStartX = null;
+  wrap.addEventListener("touchstart", e=>{ touchStartX = e.changedTouches[0].clientX; }, {passive:true});
+  wrap.addEventListener("touchend", e=>{
+    if(touchStartX == null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if(Math.abs(dx) > 40){ carouselIndex += (dx < 0 ? 1 : -1); updateCarousel(); }
+    touchStartX = null;
+  }, {passive:true});
+
+  carouselIndex = 0;
+  updateCarousel();
+}
+
+// cart drawer
+function openDrawer(){ $("drawer").classList.add("open"); }
+function closeDrawer(){ $("drawer").classList.remove("open"); }
+function updateCartUI(){
+  const empty = $("cartEmpty");
+  const item = $("cartItem");
+  const count = $("cartCount");
+  if(!empty || !item || !count) return;
+  if(purchased){ empty.style.display="none"; item.style.display="grid"; count.textContent="1"; }
+  else { empty.style.display="block"; item.style.display="none"; count.textContent="0"; }
+}
+
+// timer (Timer page only)
+function startTimer(seconds=60){
+  const pill = $("timerPill");
+  const out = $("countdown");
+  if(!out || !pill) return;
+
+  if(timerInterval) clearInterval(timerInterval);
+  timerStartTs = Date.now();
+  remainingMs = seconds*1000;
+  out.textContent = "01:00";
+
+  timerInterval = setInterval(()=>{
+    const elapsed = Date.now() - timerStartTs;
+    remainingMs = Math.max(0, seconds*1000 - elapsed);
+    out.textContent = formatMMSS(remainingMs);
+    if(remainingMs <= 0){
+      clearInterval(timerInterval);
+      pill.textContent = "Offer ended";
+      pill.style.background = "#eee";
+      pill.style.color = "#666";
+      const atc = $("atcBtn");
+      if(atc){ atc.disabled = true; atc.style.opacity="0.6"; atc.style.cursor="not-allowed"; }
+      logEvent("timer_expired");
+    }
+  }, 250);
+}
+
+// main
+function wireCommon(condition, startTimerOnConsent=false){
+  renderGallery();
+
+  const atc = $("atcBtn");
+  if(atc){
+    atc.addEventListener("click", ()=>{
+      if(purchased) return;
+      purchased = true;
+      atc.disabled = true;
+      atc.textContent = "Purchased ✓";
+      updateCartUI();
+      openDrawer();
+      logEvent("purchase", { remainingMsAtPurchase: typeof remainingMs === "number" ? remainingMs : null });
+    });
+  }
+  const cartBtn = $("cartBtn"); if(cartBtn) cartBtn.addEventListener("click", openDrawer);
+  const closeBtn = $("closeDrawer"); if(closeBtn) closeBtn.addEventListener("click", closeDrawer);
+
+  const agree = $("agreeBtn");
+  if(agree){
+    agree.addEventListener("click", ()=>{
+      $("cons").classList.add("hidden");
+      logEvent("consent_agreed");
+      if(condition === "Timer" && startTimerOnConsent) startTimer(60);
+    });
+  }
+
+  updateCartUI();
+  logEvent("page_view");
+}
+
+window.wireCommon = wireCommon;
 
 
 
