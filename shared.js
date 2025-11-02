@@ -99,7 +99,7 @@ function renderGallery() {
       <div id="slidesWrap"
         style="width:100%;max-width:100%;margin:0 auto;overflow:hidden;border-radius:16px;
                /* Taller band: min 420px, target 70vh, cap 820px */
-               height: clamp(800px, 80vh, 820px);">
+               height: clamp(600px, 200vh, 820px);">
       </div>
 
       <button id="carouselNext"
