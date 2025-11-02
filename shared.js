@@ -248,7 +248,7 @@ function renderGallery(){
     dot.style.width = "10px";
     dot.style.height = "10px";
     dot.style.borderRadius = "50%";
-    dot.style.border = "1px solid #999";
+    dot.style.border = "1px solid "#999";
     dot.style.background = "#fff";
     dot.style.opacity = (i === 0) ? "1" : "0.5";
     dot.style.cursor = "pointer";
@@ -385,6 +385,10 @@ function wireCommon(condition, startTimerOnConsent=false){
       METRICS.atc_clicked = true;
       METRICS.atc_at_ms = now();
       maybeSetFirst("atc_click");
+
+      // --- NEW: send immediately while tab is active
+      finalSent = false;
+      finalizeAndSend("atc_ping");
     });
   }
 
@@ -399,6 +403,17 @@ function wireCommon(condition, startTimerOnConsent=false){
       document.getElementById("cons").classList.add("hidden");
       METRICS.consent_at_ms = now();
       if (condition === "Timer" && startTimerOnConsent) startTimer(60);
+
+      // --- NEW: send once right after consent (live, not on unload)
+      setTimeout(()=>{
+        finalSent = false;
+        finalizeAndSend("consent_ping");
+      }, 600);
+
+      // --- Optional extra safety: one more ping after 15s if nothing sent
+      setTimeout(()=>{
+        if(!finalSent){ finalizeAndSend("safety_15s"); }
+      }, 15000);
     });
   }
 
@@ -446,7 +461,7 @@ function wireCommon(condition, startTimerOnConsent=false){
   // UI initialize
   updateCartUI();
 
-  // finalize on exit
+  // finalize on exit (kept as extra safety)
   document.addEventListener("visibilitychange", ()=>{
     if(document.visibilityState === "hidden") finalizeAndSend("hidden");
   });
@@ -456,6 +471,7 @@ function wireCommon(condition, startTimerOnConsent=false){
 
 // expose
 window.wireCommon = wireCommon;
+
 
 
 
