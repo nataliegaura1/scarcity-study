@@ -1,6 +1,6 @@
 // Final telemetry build: ONE ROW / PARTICIPANT + current UI preserved
 const CONFIG = {
-  ENDPOINT: "https://script.google.com/macros/s/AKfycbwdTvSqf5S4ucTmBWYE5jsu3hbTQOpzsQc4_udmqHUeEhn5Oe8EYP9khHzpUg2KCLXO/exec",
+  ENDPOINT: "https://script.google.com/macros/s/AKfycby7yg3s4McMKeeSwzpyYAZmYOQgqfXEACXxRAjmQtoFiawZooDCitvJpwv8V9K-0wGD/exec",
   PRODUCT_NAME: "Air Jordan 4 Retro 'White Cement' (2025)",
   PRICE_EUR: 119,
   IMAGES: [
