@@ -184,37 +184,48 @@ function updateCarousel(){
   Array.from(dotsWrap.children).forEach((btn, i)=>{ btn.style.opacity = (i === carouselIndex) ? "1" : "0.5"; });
 }
 
-function renderGallery(){
+function renderGallery() {
   const wrap = document.getElementById("gallery");
-  if(!wrap) return;
+  if (!wrap) return;
 
-  // keep overall card sizing
   wrap.style.width = "100%";
   wrap.style.maxWidth = "none";
-  wrap.style.margin = "0";
+  wrap.style.margin = "0 auto";
   wrap.style.padding = "0";
   const card = wrap.closest(".card");
   if (card) card.style.paddingBottom = "16px";
 
-  // Bigger, wider image area that fills the black card
+  // Wider layout (4:3 aspect ratio)
   wrap.innerHTML = `
-    <div id="carousel" style="position:relative;display:flex;align-items:center;justify-content:center;width:100%;">
+    <div id="carousel" 
+         style="position:relative;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                width:100%;
+                max-width:900px;
+                margin:0 auto;">
       <button id="carouselPrev"
         aria-label="Previous image"
-        style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2;">‹</button>
+        style="position:absolute;left:12px;top:50%;transform:translateY(-50%);
+               font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;
+               border-radius:50%;background:#fff;cursor:pointer;
+               box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2;">‹</button>
 
       <div id="slidesWrap"
         style="width:100%;
-               max-width:100%;
-               margin:0;
                overflow:hidden;
                border-radius:16px;
-               height: clamp(820px, 80vh, 1100px);">
+               aspect-ratio: 4 / 3;
+               background:#000;">
       </div>
 
       <button id="carouselNext"
         aria-label="Next image"
-        style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2;">›</button>
+        style="position:absolute;right:12px;top:50%;transform:translateY(-50%);
+               font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;
+               border-radius:50%;background:#fff;cursor:pointer;
+               box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2;">›</button>
 
       <div id="carouselDots" aria-label="Image selector"
         style="position:absolute;bottom:10px;display:flex;gap:8px;z-index:2;"></div>
@@ -224,26 +235,29 @@ function renderGallery(){
   const slidesWrap = document.getElementById("slidesWrap");
   const dotsWrap = document.getElementById("carouselDots");
 
-  CONFIG.IMAGES.forEach((src, i)=>{
+  CONFIG.IMAGES.forEach((src, i) => {
     const img = document.createElement("img");
     img.setAttribute("data-slide", String(i));
     img.alt = "Jordan 4 product image";
     img.src = src;
 
-    // Fill the container (bigger + wider) — this is the only change that matters visually
+    // Wider, natural image scaling
     img.style.width = "100%";
     img.style.height = "100%";
-    img.style.objectFit = "cover";   // fill the area, no letterboxing
+    img.style.objectFit = "contain"; // keeps shoe proportions
     img.style.borderRadius = "16px";
     img.style.display = (i === 0) ? "block" : "none";
     img.decoding = "async";
 
-    img.addEventListener("click", ()=>{ METRICS.clicks_total++; maybeSetFirst("gallery_interaction"); });
+    img.addEventListener("click", () => {
+      METRICS.clicks_total++;
+      maybeSetFirst("gallery_interaction");
+    });
     slidesWrap.appendChild(img);
 
     const dot = document.createElement("button");
     dot.type = "button";
-    dot.setAttribute("aria-label", `Show image ${i+1}`);
+    dot.setAttribute("aria-label", `Show image ${i + 1}`);
     dot.style.width = "10px";
     dot.style.height = "10px";
     dot.style.borderRadius = "50%";
@@ -251,30 +265,63 @@ function renderGallery(){
     dot.style.background = "#fff";
     dot.style.opacity = (i === 0) ? "1" : "0.5";
     dot.style.cursor = "pointer";
-    dot.addEventListener("click", ()=>{ carouselIndex = i; updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_dot"); });
+    dot.addEventListener("click", () => {
+      carouselIndex = i;
+      updateCarousel();
+      METRICS.clicks_total++;
+      maybeSetFirst("gallery_dot");
+    });
     dotsWrap.appendChild(dot);
   });
 
-  document.getElementById("carouselPrev").addEventListener("click", ()=>{ carouselIndex--; updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_prev"); });
-  document.getElementById("carouselNext").addEventListener("click", ()=>{ carouselIndex++; updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_next"); });
+  document.getElementById("carouselPrev").addEventListener("click", () => {
+    carouselIndex--;
+    updateCarousel();
+    METRICS.clicks_total++;
+    maybeSetFirst("gallery_prev");
+  });
+  document.getElementById("carouselNext").addEventListener("click", () => {
+    carouselIndex++;
+    updateCarousel();
+    METRICS.clicks_total++;
+    maybeSetFirst("gallery_next");
+  });
 
   // keyboard & swipe
   let touchStartX = null;
-  wrap.addEventListener("keydown",(e)=>{
-    if(e.key==="ArrowLeft"){ carouselIndex--; updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_key_prev"); }
-    if(e.key==="ArrowRight"){ carouselIndex++; updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_key_next"); }
+  wrap.addEventListener("keydown", (e) => {
+    if (e.key === "ArrowLeft") {
+      carouselIndex--;
+      updateCarousel();
+      METRICS.clicks_total++;
+      maybeSetFirst("gallery_key_prev");
+    }
+    if (e.key === "ArrowRight") {
+      carouselIndex++;
+      updateCarousel();
+      METRICS.clicks_total++;
+      maybeSetFirst("gallery_key_next");
+    }
   });
-  wrap.addEventListener("touchstart",(e)=>{ touchStartX = e.changedTouches[0].clientX; },{passive:true});
-  wrap.addEventListener("touchend",(e)=>{
-    if(touchStartX==null) return;
+  wrap.addEventListener("touchstart", (e) => {
+    touchStartX = e.changedTouches[0].clientX;
+  }, { passive: true });
+  wrap.addEventListener("touchend", (e) => {
+    if (touchStartX == null) return;
     const dx = e.changedTouches[0].clientX - touchStartX;
-    if(Math.abs(dx)>40){ carouselIndex += (dx<0?1:-1); updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_swipe"); }
+    if (Math.abs(dx) > 40) {
+      carouselIndex += (dx < 0 ? 1 : -1);
+      updateCarousel();
+      METRICS.clicks_total++;
+      maybeSetFirst("gallery_swipe");
+    }
     touchStartX = null;
-  },{passive:true});
+  }, { passive: true });
 
   carouselIndex = 0;
   updateCarousel();
 }
+
 
 /* -----------------------
    Cart drawer & ATC
