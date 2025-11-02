@@ -202,13 +202,14 @@ function renderGallery(){
         aria-label="Previous image"
         style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2;">‹</button>
 
-      <div id="slidesWrap"
-        style="width:100%;
-               max-width:100%;
-               margin:0 auto;
-               overflow:hidden;
-               border-radius:16px;
-               height: clamp(750px, 90vh, 950px);   /* taller so it fills the card */
+     <div id="slidesWrap"
+  style="width:100%;
+         max-width:100%;
+         margin:0;
+         overflow:hidden;
+         border-radius:16px;
+         height: clamp(720px, 75vh, 920px);">
+</div>   /* taller so it fills the card */
                aspect-ratio: 4 / 3;                 /* wide product shape */
                display:flex;
                align-items:center;
