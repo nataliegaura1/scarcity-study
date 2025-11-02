@@ -93,21 +93,14 @@ function flushQueue(){
   } catch(_) {}
 }
 
+/* === CHANGED: simple fetch, no headers → no preflight === */
 function trySend(payload){
   try {
-    const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
-    if(navigator.sendBeacon && navigator.sendBeacon(CONFIG.ENDPOINT, blob)){
-      return true;
-    }
-  } catch(_) {}
-
-  try {
-    // No headers → simple request (no preflight). keepalive lets it finish after unload.
     fetch(CONFIG.ENDPOINT, {
       method: "POST",
       body: JSON.stringify(payload),
-      keepalive: true,
-      mode: "no-cors"
+      mode: "no-cors",
+      keepalive: true
     });
     return true;
   } catch(_) {
@@ -248,7 +241,7 @@ function renderGallery(){
     dot.style.width = "10px";
     dot.style.height = "10px";
     dot.style.borderRadius = "50%";
-    dot.style.border = "1px solid #999";   // ← fixed line
+    dot.style.border = "1px solid #999";   // fixed line
     dot.style.background = "#fff";
     dot.style.opacity = (i === 0) ? "1" : "0.5";
     dot.style.cursor = "pointer";
@@ -471,6 +464,7 @@ function wireCommon(condition, startTimerOnConsent=false){
 
 // expose
 window.wireCommon = wireCommon;
+
 
 
 
