@@ -569,9 +569,13 @@ function wireCommon(condition, startTimerOnConsent=false){
   });
   window.addEventListener("pagehide", ()=>finalizeAndSend("pagehide"));
   window.addEventListener("beforeunload", ()=>finalizeAndSend("beforeunload"));
+
+  // --- Added: extra scroll space (purely visual, no tracking impact)
+  const pad = document.createElement("div");
+  pad.style.height = "150px"; // ≈ 15 cm of extra scroll space
+  document.body.appendChild(pad);
 }
 
-// expose
 window.wireCommon = wireCommon;
 
 
