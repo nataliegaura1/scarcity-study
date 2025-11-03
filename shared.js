@@ -209,7 +209,7 @@ function renderAlternativesRow() {
   section.setAttribute("aria-label", "Browse more sneakers");
   section.style.cssText = `
     max-width: 1080px;
-    margin: 24px auto 0 auto;
+    margin: 80px auto 0 auto;
     padding: 0 8px 24px 8px;
     user-select: none;
     pointer-events: none; /* non-clickable */
