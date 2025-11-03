@@ -259,6 +259,52 @@ function renderAlternativesRow() {
 }
 
 /* -----------------------
+   Visual highlight for scarcity badges (no behavior changes)
+------------------------*/
+function highlightScarcityBadges() {
+  // TIMER pill
+  const timerPill = document.getElementById("timerPill");
+  const countdown = document.getElementById("countdown");
+  if (timerPill) {
+    timerPill.style.background = "#ff2b2b";
+    timerPill.style.color = "#fff";
+    timerPill.style.fontWeight = "800";
+    timerPill.style.fontSize = "16px";
+    timerPill.style.padding = "6px 10px";
+    timerPill.style.borderRadius = "999px";
+    timerPill.style.boxShadow = "0 0 0 2px rgba(255,43,43,.25) inset";
+    if (countdown) {
+      countdown.style.fontWeight = "900";
+      countdown.style.letterSpacing = "0.5px";
+    }
+  }
+
+  // STOCK pill
+  let stockPill = document.getElementById("stockPill");
+  if (!stockPill) stockPill = document.querySelector(".stock-pill, .scarcity-pill");
+  if (!stockPill) {
+    const candidates = Array.from(document.querySelectorAll("span, div, strong, em"));
+    stockPill = candidates.find(el => {
+      const t = (el.textContent || "").toLowerCase();
+      return t.includes("only 3") && t.includes("stock");
+    }) || null;
+  }
+
+  if (stockPill) {
+    stockPill.style.background = "#ff2b2b";
+    stockPill.style.color = "#fff";
+    stockPill.style.fontWeight = "800";
+    stockPill.style.fontSize = "16px";
+    stockPill.style.padding = "6px 10px";
+    stockPill.style.borderRadius = "999px";
+    stockPill.style.boxShadow = "0 0 0 2px rgba(255,43,43,.25) inset";
+    stockPill.style.display = "inline-flex";
+    stockPill.style.alignItems = "center";
+    stockPill.style.gap = "6px";
+  }
+}
+
+/* -----------------------
    Carousel (keep layout) — PICTURE PART ONLY CHANGED
 ------------------------*/
 let carouselIndex = 0;
@@ -469,6 +515,8 @@ function wireCommon(condition, startTimerOnConsent=false){
   flushQueue();
 
   renderGallery();
+  highlightScarcityBadges(); // make the red labels bigger/brighter
+
 
   // global click count + first interaction inference
   document.addEventListener("click",(e)=>{
