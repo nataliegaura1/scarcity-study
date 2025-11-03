@@ -572,7 +572,7 @@ function wireCommon(condition, startTimerOnConsent=false){
 
   // --- Added: extra scroll space (purely visual, no tracking impact)
   const pad = document.createElement("div");
-  pad.style.height = "150px"; // ≈ 15 cm of extra scroll space
+  pad.style.height = "300px"; // ≈ 30 cm of extra scroll space
   document.body.appendChild(pad);
 }
 
