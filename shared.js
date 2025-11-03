@@ -12,11 +12,31 @@ const CONFIG = {
 
   // --- Added: Alternative sneakers (visual-only, not tracked)
   ALTERNATIVES: [
-    { name: "Jordan 1 Retro Low OG Zion Williamson Voodoo Alternate", priceEUR: 187, img: "images/zion-voodoo-alt.jpg" },
-    { name: "Jordan 1 Retro High OG Shattered Backboard (2025)", priceEUR: 108, img: "images/shattered-backboard-2025.jpg" },
-    { name: "Jordan 1 Retro Low OG Nigel Sylvester Better With Time", priceEUR: 168, img: "images/nigel-bwt.jpg" },
-    { name: "Jordan 1 Retro Low OG SP Travis Scott Velvet Brown", priceEUR: 317, img: "images/travis-velvet-brown.jpg" },
-    { name: "Jordan 1 Retro High OG Chicago Lost and Found", priceEUR: 170, img: "images/chicago-lost-and-found.jpg" }
+    {
+      name: "Jordan 1 Retro Low OG Zion Williamson Voodoo Alternate",
+      priceEUR: 187,
+      img: "images/zion-voodoo-alt.jpg"
+    },
+    {
+      name: "Jordan 1 Retro High OG Shattered Backboard (2025)",
+      priceEUR: 108,
+      img: "images/shattered-backboard-2025.jpg"
+    },
+    {
+      name: "Jordan 1 Retro Low OG Nigel Sylvester Better With Time",
+      priceEUR: 168,
+      img: "images/nigel-bwt.jpg"
+    },
+    {
+      name: "Jordan 1 Retro Low OG SP Travis Scott Velvet Brown",
+      priceEUR: 317,
+      img: "images/travis-velvet-brown.jpg"
+    },
+    {
+      name: "Jordan 1 Retro High OG Chicago Lost and Found",
+      priceEUR: 170,
+      img: "images/chicago-lost-and-found.jpg"
+    }
   ]
 };
 
@@ -37,26 +57,39 @@ if (!sessionId) {
 const PAGE_T0 = performance.now(); // page-load baseline
 
 const METRICS = {
+  // identity
   participantId,
   sessionId,
+
+  // timing anchors
   page_loaded_at_ms: PAGE_T0,
-  consent_at_ms: null,
+  consent_at_ms: null, // set on consent
   atc_at_ms: null,
+
+  // actions
   atc_clicked: false,
   first_interaction: null,
   clicks_total: 0,
+
+  // info panels
   info_panels: {
     sizePanel: { open_count: 0, time_open_ms: 0, _opened_at_ms: null },
     retPanel:  { open_count: 0, time_open_ms: 0, _opened_at_ms: null },
     descPanel: { open_count: 0, time_open_ms: 0, _opened_at_ms: null },
   },
   info_depth: { count_opened: 0 },
-  scroll_max: 0,
+
+  // depth
+  scroll_max: 0, // 0..1
+
+  // outcome
   bounce: null
 };
 
 function now() { return performance.now(); }
-function maybeSetFirst(label){ if(!METRICS.first_interaction) METRICS.first_interaction = label; }
+function maybeSetFirst(label){
+  if(!METRICS.first_interaction) METRICS.first_interaction = label;
+}
 
 /* -----------------------
    Reliable sender
@@ -72,6 +105,7 @@ function queue(payload){
     localStorage.setItem(QUEUE_KEY, JSON.stringify(arr));
   } catch(_) {}
 }
+
 function flushQueue(){
   try {
     const raw = localStorage.getItem(QUEUE_KEY);
@@ -79,29 +113,52 @@ function flushQueue(){
     const arr = JSON.parse(raw);
     if(!Array.isArray(arr) || !arr.length) return;
     const remain = [];
-    for(const p of arr){ const ok = trySend(p); if(!ok) remain.push(p); }
+    for(const p of arr){
+      const ok = trySend(p);
+      if(!ok) remain.push(p);
+    }
     if(remain.length) localStorage.setItem(QUEUE_KEY, JSON.stringify(remain));
     else localStorage.removeItem(QUEUE_KEY);
   } catch(_) {}
 }
+
+/* simple fetch, no headers → no preflight */
 function trySend(payload){
   try {
-    fetch(CONFIG.ENDPOINT, { method: "POST", body: JSON.stringify(payload), mode: "no-cors", keepalive: true });
+    fetch(CONFIG.ENDPOINT, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      mode: "no-cors",
+      keepalive: true
+    });
     return true;
-  } catch(_) { return false; }
+  } catch(_) {
+    return false;
+  }
 }
+
 function finalizeAndSend(reason){
-  if(finalSent) return;
+  if(finalSent) return; // dedupe guard
   finalSent = true;
+
+  // close any open panels to capture open time
   ["sizePanel","retPanel","descPanel"].forEach(closePanelIfOpen);
+
   const end = now();
   const time_spent_ms = Math.max(0, end - METRICS.page_loaded_at_ms);
   const engaged_start = METRICS.consent_at_ms ?? METRICS.page_loaded_at_ms;
   const engaged_time_ms = Math.max(0, end - engaged_start);
+  const total_wall_ms = time_spent_ms;
+
+  // info depth unique count
   let uniqueOpened = 0;
-  for(const k of ["sizePanel","retPanel","descPanel"]){ if(METRICS.info_panels[k].open_count > 0) uniqueOpened++; }
+  for(const k of ["sizePanel","retPanel","descPanel"]){
+    if(METRICS.info_panels[k].open_count > 0) uniqueOpened++;
+  }
   METRICS.info_depth.count_opened = uniqueOpened;
+
   METRICS.bounce = !METRICS.atc_clicked;
+
   const payload = {
     timestamp: new Date().toISOString(),
     participantId: METRICS.participantId || "",
@@ -112,52 +169,84 @@ function finalizeAndSend(reason){
     url: location.href,
     referrer: document.referrer || "",
     userAgent: navigator.userAgent,
+
     time_spent_ms,
     engaged_time_ms,
-    total_wall_ms: time_spent_ms,
+    total_wall_ms,
+
     atc_clicked: METRICS.atc_clicked,
     atc_latency_ms: METRICS.atc_at_ms == null ? null : Math.max(0, METRICS.atc_at_ms - METRICS.page_loaded_at_ms),
+
     first_interaction: METRICS.first_interaction,
+
     info_depth: { count_opened: METRICS.info_depth.count_opened },
     info_panels: {
       sizePanel: { open_count: METRICS.info_panels.sizePanel.open_count, time_open_ms: METRICS.info_panels.sizePanel.time_open_ms },
       retPanel:  { open_count: METRICS.info_panels.retPanel.open_count,  time_open_ms: METRICS.info_panels.retPanel.time_open_ms },
       descPanel: { open_count: METRICS.info_panels.descPanel.open_count, time_open_ms: METRICS.info_panels.descPanel.time_open_ms }
     },
+
     scroll_max: Number(METRICS.scroll_max.toFixed(3)),
     clicks_total: METRICS.clicks_total,
     bounce: METRICS.bounce,
+
     end_reason: reason || "unload"
   };
+
   const ok = trySend(payload);
   if(!ok) queue(payload);
 }
 
 /* -----------------------
-   Alternatives row (visual-only)
+   Alternatives row (visual-only, non-clickable)
 ------------------------*/
 function renderAlternativesRow() {
   const gallery = document.getElementById("gallery");
   if (!gallery || !gallery.parentNode) return;
+
   const section = document.createElement("section");
   section.id = "browseMore";
   section.setAttribute("aria-label", "Browse more sneakers");
   section.style.cssText = `
-    max-width:1080px;
-    margin:80px auto 0 auto;
-    padding:0 8px 24px 8px;
-    user-select:none;
-    pointer-events:none;
+    max-width: 1080px;
+    margin: 80px auto 0 auto;
+    padding: 0 8px 24px 8px;
+    user-select: none;
+    pointer-events: none; /* non-clickable */
   `;
+
   section.innerHTML = `
     <h2 style="font-size:20px;font-weight:700;margin:0 0 12px 6px;">Browse More</h2>
-    <div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;justify-items:center;">
+    <div style="
+      display:grid;
+      grid-template-columns:repeat(5,minmax(0,1fr));
+      gap:12px;
+      justify-items:center;
+    ">
       ${CONFIG.ALTERNATIVES.map(a => `
-        <article style="background:#0f1419;border:1px solid #1f2530;border-radius:16px;padding:10px;width:100%;max-width:200px;box-shadow:0 1px 3px rgba(0,0,0,.15);">
-          <div style="width:100%;aspect-ratio:5/3;background:#0a0f14;border-radius:12px;display:grid;place-items:center;overflow:hidden;">
+        <article role="presentation" style="
+          background:#0f1419;
+          border:1px solid #1f2530;
+          border-radius:16px;
+          padding:10px;
+          width:100%;
+          max-width:200px;
+          box-shadow:0 1px 3px rgba(0,0,0,.15);
+        ">
+          <div style="
+            width:100%;
+            aspect-ratio:5/3;
+            background:#0a0f14;
+            border-radius:12px;
+            display:grid;
+            place-items:center;
+            overflow:hidden;
+          ">
             <img src="${a.img}" alt="" decoding="async" style="width:100%;height:100%;object-fit:contain;">
           </div>
-          <div style="margin-top:6px;font-size:13px;color:#e6eaef;line-height:1.2;">${a.name}</div>
+          <div style="margin-top:6px;font-size:13px;color:#e6eaef;line-height:1.2;">
+            ${a.name}
+          </div>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
             <strong>€${a.priceEUR}</strong>
             <span style="font-size:11px;border:1px solid #2a3342;border-radius:8px;padding:2px 6px;">Xpress Ship</span>
@@ -169,10 +258,215 @@ function renderAlternativesRow() {
   gallery.parentNode.insertBefore(section, gallery.nextSibling);
 }
 
+
 /* -----------------------
-   Bright red highlight for scarcity badges
+   Carousel (keep layout) — PICTURE PART ONLY CHANGED
+------------------------*/
+let carouselIndex = 0;
+function updateCarousel(){
+  const slidesWrap = document.getElementById("slidesWrap");
+  const dotsWrap = document.getElementById("carouselDots");
+  if(!slidesWrap || !dotsWrap) return;
+  const slides = Array.from(slidesWrap.querySelectorAll("img[data-slide]"));
+  if(!slides.length) return;
+  if(carouselIndex < 0) carouselIndex = slides.length - 1;
+  if(carouselIndex >= slides.length) carouselIndex = 0;
+  slides.forEach((img, idx)=>{ img.style.display = (idx === carouselIndex) ? "block" : "none"; });
+  Array.from(dotsWrap.children).forEach((btn, i)=>{ btn.style.opacity = (i === carouselIndex) ? "1" : "0.5"; });
+}
+
+function renderGallery(){
+  const wrap = document.getElementById("gallery");
+  if(!wrap) return;
+
+  // keep the card bounds; only change the picture region itself
+  wrap.style.width = "100%";
+  wrap.style.maxWidth = "none";
+  wrap.style.margin = "0";
+  const card = wrap.closest(".card");
+  if (card) card.style.paddingBottom = "16px";
+
+  // StockX-like wide stage (≈5:3) + thumbnail row below
+  wrap.innerHTML = `
+    <div id="carousel" style="position:relative;display:flex;flex-direction:column;gap:12px;width:100%;">
+      <div style="position:relative;">
+        <button id="carouselPrev"
+          aria-label="Previous image"
+          style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2;">‹</button>
+
+        <div id="slidesWrap"
+          style="width:100%;max-width:980px;margin:0 auto;overflow:hidden;border-radius:16px;
+                 aspect-ratio: 5 / 3; background:#0f1419; display:flex; align-items:center; justify-content:center;">
+        </div>
+
+        <button id="carouselNext"
+          aria-label="Next image"
+          style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:32px;padding:.4rem .6rem;border:1px solid #ddd;border-radius:50%;background:#fff;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);z-index:2;">›</button>
+
+        <div id="carouselDots" aria-label="Image selector"
+          style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:2;"></div>
+      </div>
+
+      <!-- “Browse more” style row -->
+      <div id="moreRow" style="display:flex;flex-wrap:nowrap;gap:10px;justify-content:center;max-width:980px;margin:0 auto;">
+      </div>
+    </div>
+  `;
+
+  const slidesWrap = document.getElementById("slidesWrap");
+  const dotsWrap = document.getElementById("carouselDots");
+  const moreRow = document.getElementById("moreRow");
+
+  // Main slides
+  CONFIG.IMAGES.forEach((src, i)=>{
+    const img = document.createElement("img");
+    img.setAttribute("data-slide", String(i));
+    img.alt = "Jordan 4 product image";
+    img.src = src;
+    img.style.width = "100%";
+    img.style.height = "100%";
+    img.style.objectFit = "contain";     // keep shoe proportions, fill nicely
+    img.style.display = (i === 0) ? "block" : "none";
+    img.decoding = "async";
+    img.addEventListener("click", ()=>{ METRICS.clicks_total++; maybeSetFirst("gallery_interaction"); });
+    slidesWrap.appendChild(img);
+
+    // dots
+    const dot = document.createElement("button");
+    dot.type = "button";
+    dot.setAttribute("aria-label", `Show image ${i+1}`);
+    dot.style.width = "10px";
+    dot.style.height = "10px";
+    dot.style.borderRadius = "50%";
+    dot.style.border = "1px solid #999";
+    dot.style.background = "#fff";
+    dot.style.opacity = (i === 0) ? "1" : "0.5";
+    dot.style.cursor = "pointer";
+    dot.addEventListener("click", ()=>{ carouselIndex = i; updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_dot"); });
+    dotsWrap.appendChild(dot);
+
+    // “browse more” thumbs (small, clickable)
+    const thumbWrap = document.createElement("button");
+    thumbWrap.type = "button";
+    thumbWrap.style.border = "1px solid #1f2530";
+    thumbWrap.style.background = "#0f1419";
+    thumbWrap.style.borderRadius = "12px";
+    thumbWrap.style.padding = "6px";
+    thumbWrap.style.cursor = "pointer";
+    thumbWrap.style.display = "grid";
+    thumbWrap.style.placeItems = "center";
+    thumbWrap.addEventListener("click", ()=>{ carouselIndex = i; updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_thumb"); });
+
+    const t = document.createElement("img");
+    t.src = src;
+    t.alt = "Other option";
+    t.style.width = "120px";
+    t.style.height = "80px";
+    t.style.objectFit = "contain";
+    thumbWrap.appendChild(t);
+    moreRow.appendChild(thumbWrap);
+  });
+
+  document.getElementById("carouselPrev").addEventListener("click", ()=>{ carouselIndex--; updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_prev"); });
+  document.getElementById("carouselNext").addEventListener("click", ()=>{ carouselIndex++; updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_next"); });
+
+  // keyboard & swipe
+  let touchStartX = null;
+  wrap.addEventListener("keydown",(e)=>{
+    if(e.key==="ArrowLeft"){ carouselIndex--; updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_key_prev"); }
+    if(e.key==="ArrowRight"){ carouselIndex++; updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_key_next"); }
+  });
+  wrap.addEventListener("touchstart",(e)=>{ touchStartX = e.changedTouches[0].clientX; },{passive:true});
+  wrap.addEventListener("touchend",(e)=>{
+    if(touchStartX==null) return;
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if(Math.abs(dx)>40){ carouselIndex += (dx<0?1:-1); updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_swipe"); }
+    touchStartX = null;
+  },{passive:true});
+
+  carouselIndex = 0;
+  updateCarousel();
+
+  // --- Added: insert the non-clickable alternatives row below carousel (red area)
+  renderAlternativesRow();
+}
+
+/* -----------------------
+   Cart drawer & ATC
+------------------------*/
+let purchased = false;
+function openDrawer(){ document.getElementById("drawer").classList.add("open"); }
+function closeDrawer(){ document.getElementById("drawer").classList.remove("open"); }
+function updateCartUI(){
+  const empty = document.getElementById("cartEmpty");
+  const item = document.getElementById("cartItem");
+  const count = document.getElementById("cartCount");
+  if(!empty || !item || !count) return;
+  if(purchased){ empty.style.display="none"; item.style.display="grid"; count.textContent="1"; }
+  else { empty.style.display="block"; item.style.display="none"; count.textContent="0"; }
+}
+
+/* -----------------------
+   Panels timing helpers
+------------------------*/
+function openPanel(key){
+  const p = METRICS.info_panels[key];
+  if(!p) return;
+  p.open_count += 1;
+  if(p._opened_at_ms == null) p._opened_at_ms = now();
+}
+function closePanelIfOpen(key){
+  const p = METRICS.info_panels[key];
+  if(!p) return;
+  if(p._opened_at_ms != null){
+    p.time_open_ms += Math.max(0, now() - p._opened_at_ms);
+    p._opened_at_ms = null;
+  }
+}
+
+/* -----------------------
+   Timer (Timer condition)
+------------------------*/
+let timerInterval = null;
+let timerStartTs = null;
+let remainingMs = 0;
+
+function formatMMSS(ms){
+  const sec = Math.max(0, Math.ceil(ms/1000));
+  const m = Math.floor(sec/60).toString().padStart(2,"0");
+  const s = (sec%60).toString().padStart(2,"0");
+  return `${m}:${s}`;
+}
+function startTimer(seconds=60){
+  const pill = document.getElementById("timerPill");
+  const out = document.getElementById("countdown");
+  if(!out || !pill) return;
+
+  if(timerInterval) clearInterval(timerInterval);
+  timerStartTs = Date.now();
+  remainingMs = seconds*1000;
+  out.textContent = "01:00";
+
+  timerInterval = setInterval(()=>{
+    const elapsed = Date.now() - timerStartTs;
+    remainingMs = Math.max(0, seconds*1000 - elapsed);
+    out.textContent = formatMMSS(remainingMs);
+    if(remainingMs <= 0){
+      clearInterval(timerInterval);
+      pill.textContent = "Offer ended";
+      pill.style.background = "#eee";
+      pill.style.color = "#666";
+      const atc = document.getElementById("atcBtn");
+      if(atc){ atc.disabled = true; atc.style.opacity="0.6"; atc.style.cursor="not-allowed"; }
+    }
+  }, 250);
+}
+
+/* -----------------------
+   Bright red/bigger badges (visual-only)
 ------------------------*/
 function highlightScarcityBadges() {
+  // Timer pill
   const timerPill = document.getElementById("timerPill");
   if (timerPill) {
     timerPill.style.background = "#ff2b2b";
@@ -182,102 +476,147 @@ function highlightScarcityBadges() {
     timerPill.style.padding = "6px 10px";
     timerPill.style.borderRadius = "999px";
   }
-  const stockPill = document.querySelector("span,div,strong,em,p");
-  if (stockPill && stockPill.textContent && stockPill.textContent.toLowerCase().includes("only 3") && stockPill.textContent.toLowerCase().includes("stock")) {
+
+  // Stock pill: find the element that contains the stock text
+  let stockPill = null;
+  const candidates = Array.from(document.querySelectorAll("span, div, strong, em, p"));
+  for (const el of candidates) {
+    const t = (el.textContent || "").toLowerCase();
+    if (t.includes("only 3") && t.includes("stock")) { stockPill = el; break; }
+  }
+  if (stockPill) {
     stockPill.style.background = "#ff2b2b";
     stockPill.style.color = "#fff";
     stockPill.style.fontWeight = "800";
     stockPill.style.fontSize = "16px";
     stockPill.style.padding = "6px 10px";
     stockPill.style.borderRadius = "999px";
+    stockPill.style.display = "inline-block";
   }
-}
-
-/* -----------------------
-   Timer
-------------------------*/
-let timerInterval = null;
-let timerStartTs = null;
-let remainingMs = 0;
-function formatMMSS(ms){ const sec=Math.max(0,Math.ceil(ms/1000)); const m=Math.floor(sec/60).toString().padStart(2,"0"); const s=(sec%60).toString().padStart(2,"0"); return `${m}:${s}`; }
-function startTimer(seconds=60){
-  const pill=document.getElementById("timerPill");
-  const out=document.getElementById("countdown");
-  if(!out||!pill) return;
-  if(timerInterval) clearInterval(timerInterval);
-  timerStartTs=Date.now(); remainingMs=seconds*1000; out.textContent="01:00";
-  timerInterval=setInterval(()=>{
-    const elapsed=Date.now()-timerStartTs;
-    remainingMs=Math.max(0,seconds*1000-elapsed);
-    out.textContent=formatMMSS(remainingMs);
-    if(remainingMs<=0){
-      clearInterval(timerInterval);
-      pill.textContent="Offer ended";
-      pill.style.background="#eee"; pill.style.color="#666";
-      const atc=document.getElementById("atcBtn");
-      if(atc){ atc.disabled=true; atc.style.opacity="0.6"; atc.style.cursor="not-allowed"; }
-    }
-  },250);
 }
 
 /* -----------------------
    Main wiring
 ------------------------*/
-function wireCommon(condition,startTimerOnConsent=false){
+function wireCommon(condition, startTimerOnConsent=false){
+  // retry any queued payloads from past sessions
   flushQueue();
-  renderAlternativesRow();
-  highlightScarcityBadges(); // red + bigger
 
+  renderGallery();
+
+  // style the scarcity badges (visual only)
+  highlightScarcityBadges();
+
+  // global click count + first interaction inference
   document.addEventListener("click",(e)=>{
     METRICS.clicks_total++;
     if(!METRICS.first_interaction){
-      const t=e.target;
-      if(t.closest("#atcBtn")) METRICS.first_interaction="atc_click";
-      else if(t.closest("#cartBtn")) METRICS.first_interaction="cart_open";
-      else if(t.closest("#sizePanel summary")) METRICS.first_interaction="sizePanel_open";
-      else if(t.closest("#retPanel summary")) METRICS.first_interaction="retPanel_open";
-      else if(t.closest(".details summary")) METRICS.first_interaction="descPanel_open";
-      else if(t.closest("#gallery")) METRICS.first_interaction="gallery_interaction";
+      const t = e.target;
+      if(t.closest("#atcBtn")) METRICS.first_interaction = "atc_click";
+      else if(t.closest("#cartBtn")) METRICS.first_interaction = "cart_open";
+      else if(t.closest("#sizePanel summary")) METRICS.first_interaction = "sizePanel_open";
+      else if(t.closest("#retPanel summary")) METRICS.first_interaction = "retPanel_open";
+      else if(t.closest(".details summary")) METRICS.first_interaction = "descPanel_open";
+      else if(t.closest("#gallery")) METRICS.first_interaction = "gallery_interaction";
     }
-  },{capture:true});
+  }, {capture:true});
 
-  const atc=document.getElementById("atcBtn");
+  // ATC
+  const atc = document.getElementById("atcBtn");
   if(atc){
-    atc.addEventListener("click",()=>{
+    atc.addEventListener("click", ()=>{
       if(purchased) return;
-      purchased=true;
-      atc.disabled=true;
-      atc.textContent="Purchased ✓";
+      purchased = true;
+      atc.disabled = true;
+      atc.textContent = "Purchased ✓";
       updateCartUI();
       openDrawer();
-      METRICS.atc_clicked=true;
-      METRICS.atc_at_ms=now();
+
+      METRICS.atc_clicked = true;
+      METRICS.atc_at_ms = now();
       maybeSetFirst("atc_click");
+      // NOTE: do NOT finalize here — final send on unload for full session timing
     });
   }
 
-  const agree=document.getElementById("agreeBtn");
+  // cart buttons
+  const cartBtn = document.getElementById("cartBtn"); if(cartBtn) cartBtn.addEventListener("click", ()=>{ openDrawer(); METRICS.clicks_total++; maybeSetFirst("cart_open"); });
+  const closeBtn = document.getElementById("closeDrawer"); if(closeBtn) closeBtn.addEventListener("click", ()=>{ closeDrawer(); METRICS.clicks_total++; });
+
+  // consent
+  const agree = document.getElementById("agreeBtn");
   if(agree){
-    agree.addEventListener("click",()=>{
+    agree.addEventListener("click", ()=>{
       document.getElementById("cons").classList.add("hidden");
-      METRICS.consent_at_ms=now();
-      if(condition==="Timer"&&startTimerOnConsent) startTimer(60);
+      METRICS.consent_at_ms = now();
+      if (condition === "Timer" && startTimerOnConsent) startTimer(60);
+      // re-apply styles when timer appears/changes
       highlightScarcityBadges();
-      finalSent=false;
+
+      // IMPORTANT: no consent ping — we only send once at the end.
+      finalSent = false; // ensure end events can send
     });
   }
 
-  updateCartUI();
-  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="hidden") finalizeAndSend("hidden"); });
-  window.addEventListener("pagehide",()=>finalizeAndSend("pagehide"));
-  window.addEventListener("beforeunload",()=>finalizeAndSend("beforeunload"));
+  // panels tracking
+  const sizePanel = document.getElementById("sizePanel");
+  if(sizePanel){
+    const sum = sizePanel.querySelector("summary");
+    if(sum) sum.addEventListener("click", ()=>maybeSetFirst("sizePanel_open"), {once:true});
+    sizePanel.addEventListener("toggle", ()=>{ if(sizePanel.open) openPanel("sizePanel"); else closePanelIfOpen("sizePanel"); });
+  }
+  const retPanel = document.getElementById("retPanel");
+  if(retPanel){
+    const sum = retPanel.querySelector("summary");
+    if(sum) sum.addEventListener("click", ()=>maybeSetFirst("retPanel_open"), {once:true});
+    retPanel.addEventListener("toggle", ()=>{ if(retPanel.open) openPanel("retPanel"); else closePanelIfOpen("retPanel"); });
+  }
+  // description = first details that is not size/ret
+  let descPanel = null;
+  try {
+    const all = Array.from(document.querySelectorAll(".details details"));
+    descPanel = all.find(d => d.id !== "sizePanel" && d.id !== "retPanel") || null;
+  } catch(_) {}
+  if(descPanel){
+    const sum = descPanel.querySelector("summary");
+    if(sum) sum.addEventListener("click", ()=>maybeSetFirst("descPanel_open"), {once:true});
+    descPanel.addEventListener("toggle", ()=>{ if(descPanel.open) openPanel("descPanel"); else closePanelIfOpen("descPanel"); });
+  }
 
-  const pad=document.createElement("div");
-  pad.style.height="300px";
+  // scroll depth
+  function updateScrollDepth(){
+    const doc = document.documentElement;
+    const body = document.body;
+    const scrollTop = window.scrollY || doc.scrollTop || body.scrollTop || 0;
+    const viewport = window.innerHeight || doc.clientHeight || 0;
+    const height = Math.max(
+      body.scrollHeight, body.offsetHeight, doc.clientHeight, doc.scrollHeight, doc.offsetHeight
+    ) || 1;
+    const depth = Math.min(1, (scrollTop + viewport) / height);
+    if(depth > METRICS.scroll_max) METRICS.scroll_max = depth;
+  }
+  updateScrollDepth();
+  window.addEventListener("scroll", updateScrollDepth, {passive:true});
+  window.addEventListener("resize", updateScrollDepth);
+
+  // UI initialize
+  updateCartUI();
+
+  // finalize on exit (the single, final row)
+  document.addEventListener("visibilitychange", ()=>{
+    if(document.visibilityState === "hidden") finalizeAndSend("hidden");
+  });
+  window.addEventListener("pagehide", ()=>finalizeAndSend("pagehide"));
+  window.addEventListener("beforeunload", ()=>finalizeAndSend("beforeunload"));
+
+  // --- Added: extra scroll space (purely visual, no tracking impact)
+  const pad = document.createElement("div");
+  pad.style.height = "300px"; // ≈ 30 cm of extra scroll space
   document.body.appendChild(pad);
 }
 
-window.wireCommon=wireCommon;
+window.wireCommon = wireCommon;
+
 
 
 
