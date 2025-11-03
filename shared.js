@@ -8,6 +8,35 @@ const CONFIG = {
     "images/whitecement-2.avif",
     "images/whitecement-3.avif",
     "images/whitecement-4.avif"
+  ],
+
+  // ▼ NEW: alternatives data (visual-only)
+  ALTERNATIVES: [
+    {
+      name: "Jordan 1 Retro Low OG Zion Williamson Voodoo Alternate",
+      priceEUR: 187,
+      img: "images/alts/zion-voodoo-alt.jpg"
+    },
+    {
+      name: "Jordan 1 Retro High OG Shattered Backboard (2025)",
+      priceEUR: 108,
+      img: "images/alts/shattered-backboard-2025.jpg"
+    },
+    {
+      name: "Jordan 1 Retro Low OG Nigel Sylvester Better With Time",
+      priceEUR: 168,
+      img: "images/alts/nigel-better-with-time.jpg"
+    },
+    {
+      name: "Jordan 1 Retro Low OG SP Travis Scott Velvet Brown",
+      priceEUR: 317,
+      img: "images/alts/travis-velvet-brown.jpg"
+    },
+    {
+      name: "Jordan 1 Retro High OG Chicago Lost and Found",
+      priceEUR: 170,
+      img: "images/alts/chicago-lost-and-found.jpg"
+    }
   ]
 };
 
@@ -169,6 +198,74 @@ function finalizeAndSend(reason){
 }
 
 /* -----------------------
+   Alternatives row (visual-only, non-clickable)
+------------------------*/
+function renderAlternativesRow() {
+  // Create the “Browse More” section and insert it right after #gallery
+  const gallery = document.getElementById("gallery");
+  if (!gallery || !gallery.parentNode) return;
+
+  const section = document.createElement("section");
+  section.id = "browseMore";
+  section.setAttribute("aria-label", "Browse more sneakers");
+  section.style.cssText = `
+    max-width: 1080px;
+    margin: 24px auto 0 auto;
+    padding: 0 8px 24px 8px;
+    user-select: none;
+    pointer-events: none; /* ← makes entire section non-clickable */
+  `;
+
+  section.innerHTML = `
+    <h2 style="font-size:20px;font-weight:700;margin:0 0 12px 6px;">Browse More</h2>
+    <div style="
+      display:grid;
+      grid-template-columns:repeat(5, minmax(0,1fr));
+      gap:12px;
+      justify-items:center;
+    ">
+      ${CONFIG.ALTERNATIVES.map(a => `
+        <article role="presentation" style="
+          background:#0f1419;
+          border:1px solid #1f2530;
+          border-radius:16px;
+          padding:10px;
+          width:100%;
+          max-width:200px;
+          box-shadow:0 1px 3px rgba(0,0,0,.15);
+        ">
+          <div style="
+            width:100%;
+            aspect-ratio:5/3;
+            background:#0a0f14;
+            border-radius:12px;
+            display:grid;
+            place-items:center;
+            overflow:hidden;
+          ">
+            ${
+              a.img
+                ? `<img src="${a.img}" alt="" aria-hidden="true" decoding="async"
+                     style="width:100%;height:100%;object-fit:contain;">`
+                : `<div style="width:100%;height:100%;display:grid;place-items:center;color:#55606e;font-size:12px;">No image</div>`
+            }
+          </div>
+          <div style="margin-top:6px;font-size:13px;color:#e6eaef;line-height:1.2;">
+            ${a.name}
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+            <strong>€${a.priceEUR}</strong>
+            <span style="font-size:11px;border:1px solid #2a3342;border-radius:8px;padding:2px 6px;">Xpress Ship</span>
+          </div>
+        </article>
+      `).join("")}
+    </div>
+  `;
+
+  gallery.parentNode.insertBefore(section, gallery.nextSibling);
+}
+
+/* -----------------------
    Carousel (keep layout) — PICTURE PART ONLY CHANGED
 ------------------------*/
 let carouselIndex = 0;
@@ -216,7 +313,7 @@ function renderGallery(){
           style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:2;"></div>
       </div>
 
-      <!-- “Browse more” style row -->
+      <!-- “Browse more” style row (thumbnails tied to this product gallery) -->
       <div id="moreRow" style="display:flex;flex-wrap:nowrap;gap:10px;justify-content:center;max-width:980px;margin:0 auto;">
       </div>
     </div>
@@ -254,7 +351,7 @@ function renderGallery(){
     dot.addEventListener("click", ()=>{ carouselIndex = i; updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_dot"); });
     dotsWrap.appendChild(dot);
 
-    // “browse more” thumbs (small, clickable)
+    // “browse more” thumbs (small, clickable) — existing feature
     const thumbWrap = document.createElement("button");
     thumbWrap.type = "button";
     thumbWrap.style.border = "1px solid #1f2530";
@@ -295,6 +392,9 @@ function renderGallery(){
 
   carouselIndex = 0;
   updateCarousel();
+
+  // ▼ NEW: Insert the non-clickable alternatives row right under the carousel (red area)
+  renderAlternativesRow();
 }
 
 /* -----------------------
