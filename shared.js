@@ -12,31 +12,11 @@ const CONFIG = {
 
   // --- Added: Alternative sneakers (visual-only, not tracked)
   ALTERNATIVES: [
-    {
-      name: "Jordan 1 Retro Low OG Zion Williamson Voodoo Alternate",
-      priceEUR: 187,
-      img: "images/zion-voodoo-alt.jpg"
-    },
-    {
-      name: "Jordan 1 Retro High OG Shattered Backboard (2025)",
-      priceEUR: 108,
-      img: "images/shattered-backboard-2025.jpg"
-    },
-    {
-      name: "Jordan 1 Retro Low OG Nigel Sylvester Better With Time",
-      priceEUR: 168,
-      img: "images/nigel-bwt.jpg"
-    },
-    {
-      name: "Jordan 1 Retro Low OG SP Travis Scott Velvet Brown",
-      priceEUR: 317,
-      img: "images/travis-velvet-brown.jpg"
-    },
-    {
-      name: "Jordan 1 Retro High OG Chicago Lost and Found",
-      priceEUR: 170,
-      img: "images/chicago-lost-and-found.jpg"
-    }
+    { name: "Jordan 1 Retro Low OG Zion Williamson Voodoo Alternate", priceEUR: 187, img: "images/zion-voodoo-alt.jpg" },
+    { name: "Jordan 1 Retro High OG Shattered Backboard (2025)", priceEUR: 108, img: "images/shattered-backboard-2025.jpg" },
+    { name: "Jordan 1 Retro Low OG Nigel Sylvester Better With Time", priceEUR: 168, img: "images/nigel-bwt.jpg" },
+    { name: "Jordan 1 Retro Low OG SP Travis Scott Velvet Brown", priceEUR: 317, img: "images/travis-velvet-brown.jpg" },
+    { name: "Jordan 1 Retro High OG Chicago Lost and Found", priceEUR: 170, img: "images/chicago-lost-and-found.jpg" }
   ]
 };
 
@@ -463,7 +443,7 @@ function startTimer(seconds=60){
 }
 
 /* -----------------------
-   Bright red/bigger badges (visual-only)
+   Bright red/bigger badges (robust targeting)
 ------------------------*/
 function highlightScarcityBadges() {
   // Timer pill
@@ -477,13 +457,28 @@ function highlightScarcityBadges() {
     timerPill.style.borderRadius = "999px";
   }
 
-  // Stock pill: find the element that contains the stock text
-  let stockPill = null;
-  const candidates = Array.from(document.querySelectorAll("span, div, strong, em, p"));
-  for (const el of candidates) {
-    const t = (el.textContent || "").toLowerCase();
-    if (t.includes("only 3") && t.includes("stock")) { stockPill = el; break; }
-  }
+  // Stock pill: find a SMALL element whose text includes "only 3" and "left in stock"
+  let stockPill =
+    document.getElementById("stockPill") ||
+    document.querySelector(".stock-pill, .scarcity-pill") ||
+    (function () {
+      const texts = ["only 3", "left", "stock"];
+      const candidates = Array.from(document.querySelectorAll("span, div, strong, em, p"));
+      const matches = candidates.filter(el => {
+        const t = (el.textContent || "").toLowerCase().replace(/\s+/g, " ");
+        return texts.every(x => t.includes(x));
+      });
+      // prefer visible, small elements (avoid large containers)
+      const sized = matches
+        .map(el => ({ el, r: el.getBoundingClientRect() }))
+        .filter(x => x.r.width > 10 && x.r.height > 10 && x.r.width < 350 && x.r.height < 100);
+      if (sized.length) {
+        sized.sort((a, b) => (a.r.width * a.r.height) - (b.r.width * b.r.height));
+        return sized[0].el;
+      }
+      return matches[0] || null;
+    })();
+
   if (stockPill) {
     stockPill.style.background = "#ff2b2b";
     stockPill.style.color = "#fff";
@@ -616,6 +611,7 @@ function wireCommon(condition, startTimerOnConsent=false){
 }
 
 window.wireCommon = wireCommon;
+
 
 
 
