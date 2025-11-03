@@ -10,32 +10,32 @@ const CONFIG = {
     "images/whitecement-4.avif"
   ],
 
-  // ▼ NEW: alternatives data (visual-only)
+  // --- Added: Alternative sneakers (visual-only, not tracked)
   ALTERNATIVES: [
     {
       name: "Jordan 1 Retro Low OG Zion Williamson Voodoo Alternate",
       priceEUR: 187,
-      img: "images/alts/zion-voodoo-alt.jpg"
+      img: "images/zion-voodoo-alt.jpg"
     },
     {
       name: "Jordan 1 Retro High OG Shattered Backboard (2025)",
       priceEUR: 108,
-      img: "images/alts/shattered-backboard-2025.jpg"
+      img: "images/shattered-backboard-2025.jpg"
     },
     {
       name: "Jordan 1 Retro Low OG Nigel Sylvester Better With Time",
       priceEUR: 168,
-      img: "images/alts/nigel-better-with-time.jpg"
+      img: "images/nigel-bwt.jpg"
     },
     {
       name: "Jordan 1 Retro Low OG SP Travis Scott Velvet Brown",
       priceEUR: 317,
-      img: "images/alts/travis-velvet-brown.jpg"
+      img: "images/travis-velvet-brown.jpg"
     },
     {
       name: "Jordan 1 Retro High OG Chicago Lost and Found",
       priceEUR: 170,
-      img: "images/alts/chicago-lost-and-found.jpg"
+      img: "images/chicago-lost-and-found.jpg"
     }
   ]
 };
@@ -201,7 +201,6 @@ function finalizeAndSend(reason){
    Alternatives row (visual-only, non-clickable)
 ------------------------*/
 function renderAlternativesRow() {
-  // Create the “Browse More” section and insert it right after #gallery
   const gallery = document.getElementById("gallery");
   if (!gallery || !gallery.parentNode) return;
 
@@ -213,14 +212,14 @@ function renderAlternativesRow() {
     margin: 24px auto 0 auto;
     padding: 0 8px 24px 8px;
     user-select: none;
-    pointer-events: none; /* ← makes entire section non-clickable */
+    pointer-events: none; /* non-clickable */
   `;
 
   section.innerHTML = `
     <h2 style="font-size:20px;font-weight:700;margin:0 0 12px 6px;">Browse More</h2>
     <div style="
       display:grid;
-      grid-template-columns:repeat(5, minmax(0,1fr));
+      grid-template-columns:repeat(5,minmax(0,1fr));
       gap:12px;
       justify-items:center;
     ">
@@ -243,12 +242,7 @@ function renderAlternativesRow() {
             place-items:center;
             overflow:hidden;
           ">
-            ${
-              a.img
-                ? `<img src="${a.img}" alt="" aria-hidden="true" decoding="async"
-                     style="width:100%;height:100%;object-fit:contain;">`
-                : `<div style="width:100%;height:100%;display:grid;place-items:center;color:#55606e;font-size:12px;">No image</div>`
-            }
+            <img src="${a.img}" alt="" decoding="async" style="width:100%;height:100%;object-fit:contain;">
           </div>
           <div style="margin-top:6px;font-size:13px;color:#e6eaef;line-height:1.2;">
             ${a.name}
@@ -261,7 +255,6 @@ function renderAlternativesRow() {
       `).join("")}
     </div>
   `;
-
   gallery.parentNode.insertBefore(section, gallery.nextSibling);
 }
 
@@ -313,7 +306,7 @@ function renderGallery(){
           style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:2;"></div>
       </div>
 
-      <!-- “Browse more” style row (thumbnails tied to this product gallery) -->
+      <!-- “Browse more” style row -->
       <div id="moreRow" style="display:flex;flex-wrap:nowrap;gap:10px;justify-content:center;max-width:980px;margin:0 auto;">
       </div>
     </div>
@@ -351,7 +344,7 @@ function renderGallery(){
     dot.addEventListener("click", ()=>{ carouselIndex = i; updateCarousel(); METRICS.clicks_total++; maybeSetFirst("gallery_dot"); });
     dotsWrap.appendChild(dot);
 
-    // “browse more” thumbs (small, clickable) — existing feature
+    // “browse more” thumbs (small, clickable)
     const thumbWrap = document.createElement("button");
     thumbWrap.type = "button";
     thumbWrap.style.border = "1px solid #1f2530";
@@ -393,7 +386,7 @@ function renderGallery(){
   carouselIndex = 0;
   updateCarousel();
 
-  // ▼ NEW: Insert the non-clickable alternatives row right under the carousel (red area)
+  // --- Added: insert the non-clickable alternatives row below carousel (red area)
   renderAlternativesRow();
 }
 
@@ -580,6 +573,7 @@ function wireCommon(condition, startTimerOnConsent=false){
 
 // expose
 window.wireCommon = wireCommon;
+
 
 
 
